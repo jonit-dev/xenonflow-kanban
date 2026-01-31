@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Archive, BrainCircuit, Calendar, Cpu, Database, Flag, Layers, Save, Trash2, User, X } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Epic, Ticket, TicketStatus } from '../types';
 import { Button } from './ui/Button';
 
@@ -9,9 +9,44 @@ interface TicketDetailModalProps {
   epics: Epic[];
   isOpen: boolean;
   onClose: () => void;
-  onSave: (updatedTicket: Ticket) => void;
+  onSave: (updatedTicket: Ticket, closeAfterSave?: boolean) => void;
   onDelete: (id: string) => void;
   onConsultMother: (ticket: Ticket, epicName?: string) => void;
+}
+
+// Debounce hook for auto-save
+function useAutoSave(callback: (ticket: Ticket) => void, delay: number = 500) {
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const ticketRef = useRef<Ticket | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  const scheduleSave = useCallback((ticket: Ticket) => {
+    ticketRef.current = ticket;
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    timeoutRef.current = setTimeout(() => {
+      if (ticketRef.current) {
+        callback(ticketRef.current);
+      }
+    }, delay);
+  }, [callback, delay]);
+
+  const immediateSave = useCallback((ticket: Ticket) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    callback(ticket);
+  }, [callback]);
+
+  return { scheduleSave, immediateSave };
 }
 
 export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
@@ -24,18 +59,42 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
   onConsultMother
 }) => {
   const [editedTicket, setEditedTicket] = useState<Ticket | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const { scheduleSave, immediateSave } = useAutoSave((ticket) => {
+    if (ticket.id) { // Only auto-save existing tickets, not new ones
+      setIsSaving(true);
+      onSave(ticket);
+      setTimeout(() => setIsSaving(false), 500);
+    }
+  });
 
+  // Sync with prop ticket
   useEffect(() => {
     setEditedTicket(ticket);
+    setHasUnsavedChanges(false);
   }, [ticket]);
+
+  // Handle field changes with auto-save
+  const handleChange = useCallback((field: keyof Ticket, value: any, immediate = false) => {
+    const updated = editedTicket ? { ...editedTicket, [field]: value } : null;
+    setEditedTicket(updated);
+    setHasUnsavedChanges(true);
+
+    // Auto-save
+    if (updated && updated.id) {
+      if (immediate) {
+        immediateSave(updated);
+      } else {
+        scheduleSave(updated);
+      }
+    }
+  }, [editedTicket, scheduleSave, immediateSave]);
 
   if (!editedTicket) return null;
 
-  const handleChange = (field: keyof Ticket, value: any) => {
-    setEditedTicket(prev => prev ? { ...prev, [field]: value } : null);
-  };
-
   const currentEpic = epics.find(e => e.id === editedTicket.epicId);
+  const isNewTicket = !editedTicket.id;
 
   return (
     <AnimatePresence>
@@ -46,7 +105,13 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="absolute inset-0 bg-black/90 backdrop-blur-md"
-            onClick={onClose}
+            onClick={() => {
+              // Auto-save before closing
+              if (editedTicket.id && hasUnsavedChanges) {
+                immediateSave(editedTicket);
+              }
+              onClose();
+            }}
           />
 
           <motion.div
@@ -63,10 +128,22 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                 </div>
                 <div>
                   <h2 className="text-sm font-black uppercase tracking-[0.4em] text-cyan-100 text-glow">Unit Data Terminal</h2>
-                  <p className="text-[10px] text-cyan-800 uppercase font-black tracking-widest mt-1">Status: Online // Sector Access Granted</p>
+                  <p className="text-[10px] text-cyan-800 uppercase font-black tracking-widest mt-1 flex items-center gap-2">
+                    Status: Online // Sector Access Granted
+                    {isSaving && <span className="text-yellow-500 animate-pulse">SAVING...</span>}
+                    {!isNewTicket && !hasUnsavedChanges && <span className="text-green-500">SYNCED</span>}
+                  </p>
                 </div>
               </div>
-              <button onClick={onClose} className="text-slate-500 hover:text-cyan-400 p-2 hover:bg-cyan-500/10 rounded-md transition-all">
+              <button
+                onClick={() => {
+                  if (editedTicket.id && hasUnsavedChanges) {
+                    immediateSave(editedTicket);
+                  }
+                  onClose();
+                }}
+                className="text-slate-500 hover:text-cyan-400 p-2 hover:bg-cyan-500/10 rounded-md transition-all"
+              >
                 <X size={24} />
               </button>
             </div>
@@ -94,7 +171,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                   <label className="text-[10px] uppercase tracking-[0.3em] text-cyan-700 font-black">Status</label>
                   <select
                     value={editedTicket.status}
-                    onChange={(e) => handleChange('status', e.target.value)}
+                    onChange={(e) => handleChange('status', e.target.value, true)}
                     className="w-full bg-black/40 border border-cyan-900/30 text-cyan-300 p-3 text-[10px] font-black tracking-widest focus:border-cyan-500 focus:outline-none rounded-md appearance-none uppercase"
                   >
                     {Object.values(TicketStatus).map(s => (
@@ -108,7 +185,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                   <label className="text-[10px] uppercase tracking-[0.3em] text-cyan-700 font-black">Priority</label>
                   <select
                     value={editedTicket.priority}
-                    onChange={(e) => handleChange('priority', e.target.value)}
+                    onChange={(e) => handleChange('priority', e.target.value, true)}
                     className="w-full bg-black/40 border border-cyan-900/30 text-cyan-300 p-3 text-[10px] font-black tracking-widest focus:border-cyan-500 focus:outline-none rounded-md appearance-none uppercase"
                   >
                     <option value="low" className="bg-slate-900">LOW</option>
@@ -125,7 +202,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                     type="number"
                     min="0"
                     value={editedTicket.storyPoints}
-                    onChange={(e) => handleChange('storyPoints', parseInt(e.target.value) || 0)}
+                    onChange={(e) => handleChange('storyPoints', parseInt(e.target.value) || 0, true)}
                     className="w-full bg-black/40 border border-cyan-900/30 text-cyan-300 p-3 text-[11px] font-black focus:border-cyan-500 focus:outline-none rounded-md"
                   />
                 </div>
@@ -136,7 +213,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                   <div className="relative">
                     <select
                       value={editedTicket.epicId || ''}
-                      onChange={(e) => handleChange('epicId', e.target.value || undefined)}
+                      onChange={(e) => handleChange('epicId', e.target.value || undefined, true)}
                       className="w-full bg-black/40 border border-cyan-900/30 text-cyan-300 p-3 text-[10px] font-black tracking-widest focus:border-cyan-500 focus:outline-none appearance-none rounded-md uppercase"
                     >
                       <option value="" className="bg-slate-900">UNASSIGNED</option>
@@ -158,7 +235,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                   <input
                     type="date"
                     value={editedTicket.startDate || ''}
-                    onChange={(e) => handleChange('startDate', e.target.value)}
+                    onChange={(e) => handleChange('startDate', e.target.value, true)}
                     className="w-full bg-black/40 border border-cyan-900/30 text-cyan-500 p-3 text-[10px] font-black focus:border-cyan-500 focus:outline-none rounded-md uppercase"
                   />
                 </div>
@@ -169,16 +246,16 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                   <input
                     type="date"
                     value={editedTicket.endDate || ''}
-                    onChange={(e) => handleChange('endDate', e.target.value)}
+                    onChange={(e) => handleChange('endDate', e.target.value, true)}
                     className="w-full bg-black/40 border border-cyan-900/30 text-cyan-500 p-3 text-[10px] font-black focus:border-cyan-500 focus:outline-none rounded-md uppercase"
                   />
                 </div>
               </div>
 
-              {/* Flags Row */}
+              {/* Flags Row - Immediate save on toggle */}
               <div className="grid grid-cols-2 gap-4">
                 <div
-                  onClick={() => handleChange('flagged', !editedTicket.flagged)}
+                  onClick={() => handleChange('flagged', !editedTicket.flagged, true)}
                   className={`flex items-center gap-4 p-4 border rounded-md cursor-pointer transition-all ${editedTicket.flagged
                       ? 'bg-orange-500/10 border-orange-500/50 text-orange-400'
                       : 'bg-black/20 border-cyan-900/20 text-cyan-900 hover:border-orange-500/30'
@@ -191,7 +268,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                   </div>
                 </div>
                 <div
-                  onClick={() => handleChange('requiresHuman', !editedTicket.requiresHuman)}
+                  onClick={() => handleChange('requiresHuman', !editedTicket.requiresHuman, true)}
                   className={`flex items-center gap-4 p-4 border rounded-md cursor-pointer transition-all ${editedTicket.requiresHuman
                       ? 'bg-yellow-500/10 border-yellow-500/50 text-yellow-500 font-black'
                       : 'bg-black/20 border-cyan-900/20 text-cyan-900 hover:border-yellow-500/30'
@@ -211,7 +288,6 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                 <textarea
                   value={editedTicket.description}
                   onChange={(e) => handleChange('description', e.target.value)}
-                  rows={6}
                   placeholder="Record unit parameters and observations..."
                   className="w-full bg-black/40 border border-cyan-900/30 text-cyan-200 p-4 focus:border-cyan-500 focus:outline-none font-mono text-[11px] leading-relaxed uppercase tracking-wider rounded-md"
                 />
@@ -254,9 +330,11 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                 >
                   <BrainCircuit size={16} /> CONSULT MOTHER
                 </Button>
-                <Button onClick={() => { onSave(editedTicket); onClose(); }} className="mother-btn px-8 py-2 font-black text-[10px] tracking-widest">
-                  <Save size={16} /> RECORD DATA
-                </Button>
+                {isNewTicket && (
+                  <Button onClick={() => { onSave(editedTicket, true); onClose(); }} className="mother-btn px-8 py-2 font-black text-[10px] tracking-widest">
+                    <Save size={16} /> CREATE UNIT
+                  </Button>
+                )}
               </div>
             </div>
 

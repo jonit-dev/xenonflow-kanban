@@ -1,4 +1,4 @@
-import { Activity, BrainCircuit, Calendar, Flag, Hash, MoreVertical, Pencil, Trash2, User } from 'lucide-react';
+import { Activity, BrainCircuit, Calendar, Flag, GitPullRequest, Hash, MoreVertical, Pencil, Trash2, User } from 'lucide-react';
 import React from 'react';
 import { Epic, Ticket, TicketStatus } from '../types';
 
@@ -60,6 +60,18 @@ export const TicketCard: React.FC<TicketCardProps> = ({ ticket, epic, onDragStar
             {ticket.title}
           </h4>
           <div className="flex items-center gap-1 shrink-0">
+            {ticket.prUrl && (
+              <a 
+                href={ticket.prUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="hover:text-purple-400 transition-colors"
+                title={ticket.prUrl}
+              >
+                <GitPullRequest size={12} className="text-purple-500" />
+              </a>
+            )}
             {ticket.flagged && <Flag size={12} className="text-orange-500" />}
             {ticket.requiresHuman && <User size={12} className="text-yellow-500" />}
           </div>

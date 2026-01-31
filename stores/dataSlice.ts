@@ -17,6 +17,7 @@ const mapApiTicket = (api: ApiTicket): Ticket => ({
   startDate: api.startDate,
   endDate: api.endDate,
   aiInsights: api.aiInsights,
+  prUrl: api.prUrl,
   flagged: api.flagged,
   requiresHuman: api.requiresHuman,
 });

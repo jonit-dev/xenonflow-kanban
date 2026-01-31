@@ -5,10 +5,6 @@ node_modules/
 dist/
 
 # Database
-data/
-*.db
-*.db-shm
-*.db-wal
 
 # Environment
 .env

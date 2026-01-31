@@ -67,6 +67,7 @@ export interface DbTicket {
   start_date: string | null;
   end_date: string | null;
   ai_insights: string | null;
+  pr_url: string | null; // GitHub PR URL
   position: number;
   flagged: number; // 0 or 1
   requires_human: number; // 0 or 1
@@ -107,6 +108,7 @@ export interface CreateTicketDto {
   assignee_id?: string;
   start_date?: string;
   end_date?: string;
+  pr_url?: string; // GitHub PR URL
   flagged?: boolean;
   requiresHuman?: boolean;
 }
@@ -122,6 +124,7 @@ export interface UpdateTicketDto {
   start_date?: string;
   end_date?: string;
   ai_insights?: string;
+  pr_url?: string; // GitHub PR URL
   flagged?: boolean;
   requiresHuman?: boolean;
 }
@@ -203,6 +206,7 @@ export interface Ticket {
   startDate?: string;
   endDate?: string;
   aiInsights?: string;
+  prUrl?: string; // GitHub PR URL
   position: number;
   flagged?: boolean; // Important/urgent flag
   requiresHuman?: boolean; // Needs human intervention

@@ -44,9 +44,9 @@ export class TicketsRepository extends BaseRepository {
     this.database().prepare(`
       INSERT INTO tickets (
         id, project_id, epic_id, assignee_id, title, description, status, impact,
-        effort, start_date, end_date, ai_insights, position, flagged, requires_human, created_at, updated_at
+        effort, start_date, end_date, ai_insights, pr_url, position, flagged, requires_human, created_at, updated_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id,
       dto.project_id,
@@ -60,6 +60,7 @@ export class TicketsRepository extends BaseRepository {
       dto.start_date || null,
       dto.end_date || null,
       null,
+      dto.pr_url || null,
       position,
       dto.flagged ? 1 : 0,
       dto.requiresHuman ? 1 : 0,
@@ -117,6 +118,10 @@ export class TicketsRepository extends BaseRepository {
       updates.push('ai_insights = ?');
       values.push(dto.ai_insights);
     }
+    if (dto.pr_url !== undefined) {
+      updates.push('pr_url = ?');
+      values.push(dto.pr_url);
+    }
     if (dto.flagged !== undefined) {
       updates.push('flagged = ?');
       values.push(dto.flagged ? 1 : 0);
@@ -162,6 +167,7 @@ export class TicketsRepository extends BaseRepository {
       startDate: db.start_date || undefined,
       endDate: db.end_date || undefined,
       aiInsights: db.ai_insights || undefined,
+      prUrl: db.pr_url || undefined,
       position: db.position,
       flagged: db.flagged === 1,
       requiresHuman: db.requires_human === 1,

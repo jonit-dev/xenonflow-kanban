@@ -48,15 +48,15 @@ export const TicketCard: React.FC<TicketCardProps> = ({ ticket, epic, onDragStar
       onDragStart={(e) => onDragStart(e, ticket.id)}
       onClick={() => onClick(ticket)}
       className={`
-        group relative p-4 mb-3 bg-slate-900/40 backdrop-blur-md
+        group relative p-2.5 mb-2 bg-slate-900/40 backdrop-blur-md
         border ${getFlagClass()} ${impactColor[impact]} border-l-4
         hover:border-cyan-500/40 hover:bg-slate-800/40
         transition-all cursor-move select-none rounded-r-lg
       `}
     >
-      <div className="flex justify-between items-start mb-2">
+      <div className="flex justify-between items-start mb-1.5">
         <div className="flex items-center gap-2">
-          <h4 className="text-cyan-100 font-bold text-xs uppercase tracking-widest leading-tight pr-2 group-hover:text-cyan-400 transition-colors">
+          <h4 className="text-cyan-100 font-medium text-xs leading-tight pr-2 group-hover:text-cyan-400 transition-colors">
             {ticket.title}
           </h4>
           <div className="flex items-center gap-1 shrink-0">
@@ -81,12 +81,12 @@ export const TicketCard: React.FC<TicketCardProps> = ({ ticket, epic, onDragStar
         )}
       </div>
 
-      <p className="text-slate-500 text-[10px] mb-3 line-clamp-2 font-medium tracking-wide leading-relaxed uppercase">
+      <p className="text-slate-500 text-[10px] mb-1.5 line-clamp-2 leading-relaxed">
         {ticket.description || "NO DATA RECORDED"}
       </p>
 
       {(ticket.startDate || ticket.endDate) && (
-        <div className="flex items-center gap-2 text-[9px] text-cyan-800 mb-2 font-black tracking-tighter">
+        <div className="flex items-center gap-2 text-[9px] text-cyan-800 mb-1.5">
           <Calendar size={10} />
           <span>{formatDate(ticket.startDate) || '...'}</span>
           <span>»</span>
@@ -94,7 +94,7 @@ export const TicketCard: React.FC<TicketCardProps> = ({ ticket, epic, onDragStar
         </div>
       )}
 
-      <div className="flex items-center justify-between mt-3">
+      <div className="flex items-center justify-between mt-2">
         <div className="flex items-center gap-2">
           {ticket.effort > 0 && (
             <div className="flex items-center text-[9px] font-black text-cyan-600 bg-black/40 px-2 py-0.5 rounded border border-cyan-900/30">

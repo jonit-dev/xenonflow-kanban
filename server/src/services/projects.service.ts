@@ -67,26 +67,28 @@ export class ProjectsService {
     return this.projectsRepository.update(id, dto);
   }
 
-  delete(id: string, confirm?: boolean): boolean {
+  delete(id: string, secret?: string): boolean {
     const project = this.projectsRepository.findById(id);
     if (!project) {
       throw new Error(`Project with id "${id}" not found`);
+    }
+
+    // HARD BLOCK: Only Joao can delete projects (requires secret)
+    // This prevents AI/automation from accidentally deleting projects
+    const DELETE_SECRET = 'joao-delete-2026';
+    if (secret !== DELETE_SECRET) {
+      throw new Error(
+        `PROJECT DELETION BLOCKED. Only Joao can delete projects. ` +
+        `Use the UI or provide the delete secret.`
+      );
     }
 
     // Get counts before deletion for logging
     const ticketCount = this.ticketsRepository.findByProjectId(id).length;
     const epicCount = this.epicsRepository.findByProjectId(id).length;
 
-    // Require explicit confirmation if project has data
-    if ((ticketCount > 0 || epicCount > 0) && !confirm) {
-      throw new Error(
-        `SAFETY: Project "${project.name}" has ${ticketCount} tickets and ${epicCount} epics. ` +
-        `Add ?confirm=true to delete. This is IRREVERSIBLE.`
-      );
-    }
-
     // Log deletion for audit trail
-    console.warn(`[DELETE] Project "${project.name}" (${id}) - ${ticketCount} tickets, ${epicCount} epics - DELETED`);
+    console.warn(`[DELETE] Project "${project.name}" (${id}) - ${ticketCount} tickets, ${epicCount} epics - DELETED BY JOAO`);
 
     return this.projectsRepository.delete(id);
   }

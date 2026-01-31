@@ -4,7 +4,8 @@
   "description": "REST API server for XenonFlow Kanban board",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && npm run copy-assets",
+    "copy-assets": "mkdir -p dist/docs dist/database/migrations && cp src/docs/openapi.yaml dist/docs/ && cp src/database/migrations/*.sql dist/database/migrations/",
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "db:migrate": "tsx src/database/migrate.ts"

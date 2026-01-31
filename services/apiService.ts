@@ -81,6 +81,11 @@ async function api<T>(endpoint: string, options?: RequestInit): Promise<T> {
     throw new Error(`API error: ${response.status} - ${error}`);
   }
 
+  // Handle 204 No Content (common for DELETE)
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
   return response.json();
 }
 

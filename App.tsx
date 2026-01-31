@@ -243,6 +243,11 @@ export default function App() {
               <h2 className="text-2xl font-display font-bold text-cyan-100 tracking-wider text-glow">
                 {activeProject.name}
               </h2>
+              {activeProject.description && (
+                <div className="text-[10px] text-cyan-700 uppercase tracking-[0.2em] font-bold mt-1 max-w-xl">
+                  {activeProject.description}
+                </div>
+              )}
             </div>
           </div>
 

@@ -247,7 +247,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase tracking-[0.3em] text-cyan-700 font-black flex items-center gap-2">
-                    <Calendar size={12} /> Archival Goal
+                    <Calendar size={12} /> Deadline
                   </label>
                   <input
                     type="date"

@@ -8,7 +8,7 @@ interface SidebarProps {
   activeProjectId: string;
   onSelectProject: (id: string) => void;
   onCreateProject: (name: string) => void;
-  onDeleteProject: (id: string) => void;
+  onDeleteProject: (id: string, secret: string) => void;
   onMotherJudgment: () => void;
   onCreateEpic: (name: string) => void;
 }
@@ -30,6 +30,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const [deleteConfirmProject, setDeleteConfirmProject] = useState<Project | null>(null);
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
+  const [deleteSecret, setDeleteSecret] = useState('');
 
   const activeProject = projects.find(p => p.id === activeProjectId);
 
@@ -52,14 +53,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }
 
   const handleDeleteConfirm = () => {
-    if (deleteConfirmProject && deleteConfirmName.trim().toLowerCase() === deleteConfirmProject.name.trim().toLowerCase()) {
-      onDeleteProject(deleteConfirmProject.id);
+    if (deleteConfirmProject && deleteConfirmName.trim().toLowerCase() === deleteConfirmProject.name.trim().toLowerCase() && deleteSecret.trim()) {
+      onDeleteProject(deleteConfirmProject.id, deleteSecret.trim());
       setDeleteConfirmProject(null);
       setDeleteConfirmName('');
+      setDeleteSecret('');
     }
   }
 
-  const isDeleteConfirmValid = deleteConfirmProject && deleteConfirmName.trim().toLowerCase() === deleteConfirmProject.name.trim().toLowerCase();
+  const isDeleteConfirmValid = deleteConfirmProject && deleteConfirmName.trim().toLowerCase() === deleteConfirmProject.name.trim().toLowerCase() && deleteSecret.trim().length > 0;
 
   // Calculate Progress
   const totalPoints = activeProject?.tickets.reduce((sum, t) => sum + (t.effort || 0), 0) || 0;
@@ -227,6 +229,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => {
               setDeleteConfirmProject(null);
               setDeleteConfirmName('');
+              setDeleteSecret('');
             }}
           />
           <div className="relative w-full max-w-md bg-slate-900/90 backdrop-blur-2xl border border-rose-500/50 shadow-[0_0_100px_rgba(244,63,94,0.3)] rounded-lg font-mono">
@@ -247,6 +250,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onClick={() => {
                   setDeleteConfirmProject(null);
                   setDeleteConfirmName('');
+                  setDeleteSecret('');
                 }}
                 className="text-slate-500 hover:text-rose-400 p-2 hover:bg-rose-500/10 rounded-md transition-all"
               >
@@ -281,6 +285,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   Enter the exact sector name to enable termination
                 </p>
               </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-[0.3em] text-rose-700 font-black flex items-center gap-2">
+                  <AlertTriangle size={12} /> Admin Secret
+                </label>
+                <input
+                  type="password"
+                  value={deleteSecret}
+                  onChange={(e) => setDeleteSecret(e.target.value)}
+                  placeholder="Enter admin secret..."
+                  className="w-full bg-black/40 border border-rose-900/30 text-rose-100 p-4 focus:border-rose-500 focus:outline-none font-bold tracking-wider rounded-md placeholder:text-rose-900/50"
+                />
+                <p className="text-[9px] text-rose-700/60 uppercase tracking-wider">
+                  Only authorized personnel can terminate sectors
+                </p>
+              </div>
             </div>
 
             {/* Footer */}
@@ -289,6 +309,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onClick={() => {
                   setDeleteConfirmProject(null);
                   setDeleteConfirmName('');
+                  setDeleteSecret('');
                 }}
                 className="px-6 py-2 text-[10px] font-black text-slate-400 border border-slate-700 hover:text-slate-200 hover:border-slate-500 uppercase tracking-widest rounded-md transition-all"
               >

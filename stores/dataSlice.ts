@@ -59,7 +59,7 @@ export interface DataSlice {
   loadProjects: () => Promise<void>;
   loadProjectDetails: (projectId: string) => Promise<void>;
   createProject: (name: string) => Promise<void>;
-  deleteProject: (projectId: string) => Promise<void>;
+  deleteProject: (projectId: string, secret: string) => Promise<void>;
   createEpic: (name: string) => Promise<void>;
   createTicket: (initialStatus?: TicketStatus, startDate?: string, endDate?: string) => void;
   saveTicket: (ticket: Ticket) => Promise<void>;
@@ -153,10 +153,10 @@ export const createDataSlice: StateCreator<
     }
   },
 
-  // Delete project
-  deleteProject: async (projectId) => {
+  // Delete project (requires secret - only Joao can delete)
+  deleteProject: async (projectId, secret) => {
     try {
-      await projectsApi.delete(projectId);
+      await projectsApi.delete(projectId, secret);
 
       const state = get();
       const remainingProjects = state.projects.filter((p) => p.id !== projectId);

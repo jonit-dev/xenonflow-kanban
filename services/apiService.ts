@@ -141,8 +141,8 @@ export const projectsApi = {
       }),
     }),
 
-  delete: (id: string) =>
-    api<void>(`/projects/${id}`, {
+  delete: (id: string, secret: string) =>
+    api<void>(`/projects/${id}?secret=${encodeURIComponent(secret)}`, {
       method: 'DELETE',
     }),
 };

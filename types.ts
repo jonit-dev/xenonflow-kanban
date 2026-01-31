@@ -44,6 +44,7 @@ export interface Project {
   epics: Epic[];
   columns: ColumnType[];
   description?: string;
+  goal?: string;
 }
 
 export interface DragItem {

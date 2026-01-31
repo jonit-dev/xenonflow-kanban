@@ -11,6 +11,7 @@ export interface ApiProject {
   id: string;
   name: string;
   description?: string;
+  goal?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -115,16 +116,24 @@ export const projectsApi = {
     };
   },
 
-  create: (data: { name: string; description?: string }) =>
+  create: (data: { name: string; description?: string; goal?: string }) =>
     api<ApiProject>('/projects', {
       method: 'POST',
-      body: JSON.stringify({ ...data, description: stripEmojis(data.description) }),
+      body: JSON.stringify({
+        ...data,
+        description: stripEmojis(data.description),
+        goal: stripEmojis(data.goal),
+      }),
     }),
 
-  update: (id: string, data: { name?: string; description?: string }) =>
+  update: (id: string, data: { name?: string; description?: string; goal?: string }) =>
     api<ApiProject>(`/projects/${id}`, {
       method: 'PUT',
-      body: JSON.stringify({ ...data, description: stripEmojis(data.description) }),
+      body: JSON.stringify({
+        ...data,
+        description: stripEmojis(data.description),
+        goal: stripEmojis(data.goal),
+      }),
     }),
 
   delete: (id: string) =>

@@ -28,9 +28,9 @@ export class ProjectsRepository extends BaseRepository {
     const now = Math.floor(Date.now() / 1000);
 
     this.database().prepare(`
-      INSERT INTO projects (id, name, description, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(id, dto.name, dto.description || null, now, now);
+      INSERT INTO projects (id, name, description, goal, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(id, dto.name, dto.description || null, dto.goal || null, now, now);
 
     return this.findById(id)!;
   }
@@ -49,6 +49,10 @@ export class ProjectsRepository extends BaseRepository {
     if (dto.description !== undefined) {
       updates.push('description = ?');
       values.push(dto.description);
+    }
+    if (dto.goal !== undefined) {
+      updates.push('goal = ?');
+      values.push(dto.goal);
     }
 
     if (updates.length === 0) return existing;
@@ -74,6 +78,7 @@ export class ProjectsRepository extends BaseRepository {
       id: db.id,
       name: db.name,
       description: db.description || undefined,
+      goal: db.goal || undefined,
       createdAt: this.timestampToIso(db.created_at),
       updatedAt: this.timestampToIso(db.updated_at),
     };

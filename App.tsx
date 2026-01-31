@@ -247,9 +247,14 @@ export default function App() {
               <h2 className="text-2xl font-display font-bold text-cyan-100 tracking-wider text-glow">
                 {activeProject.name}
               </h2>
-              {activeProject.description && (
-                <div className="text-[10px] text-cyan-700 uppercase tracking-[0.2em] font-bold mt-1 max-w-xl">
-                  {activeProject.description}
+              {activeProject.goal && (
+                <div className="mt-2 px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/20 rounded max-w-2xl">
+                  <div className="text-[10px] text-cyan-400 uppercase tracking-[0.3em] font-bold mb-0.5">
+                    PRIMARY OBJECTIVE
+                  </div>
+                  <div className="text-sm text-cyan-100 leading-snug">
+                    {activeProject.goal}
+                  </div>
                 </div>
               )}
             </div>

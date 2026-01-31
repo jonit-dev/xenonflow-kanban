@@ -3,18 +3,21 @@ import { Service } from 'typedi';
 import path from 'path';
 import fs from 'fs';
 
+// ABSOLUTE path - never depends on cwd
+const DB_DIR = '/home/joao/projects/xenonflow-kanban/server/data';
+const DB_PATH = path.join(DB_DIR, 'xenonflow.db');
+
 @Service()
 export class DatabaseClient {
   private db: Database.Database;
 
   constructor() {
-    const dbDir = path.join(process.cwd(), 'data');
-    if (!fs.existsSync(dbDir)) {
-      fs.mkdirSync(dbDir, { recursive: true });
+    if (!fs.existsSync(DB_DIR)) {
+      fs.mkdirSync(DB_DIR, { recursive: true });
     }
 
-    const dbPath = path.join(dbDir, 'xenonflow.db');
-    this.db = new Database(dbPath);
+    console.log(`[DB] Using database at: ${DB_PATH}`);
+    this.db = new Database(DB_PATH);
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('foreign_keys = ON');
   }

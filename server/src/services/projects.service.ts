@@ -67,11 +67,26 @@ export class ProjectsService {
     return this.projectsRepository.update(id, dto);
   }
 
-  delete(id: string): boolean {
+  delete(id: string, confirm?: boolean): boolean {
     const project = this.projectsRepository.findById(id);
     if (!project) {
       throw new Error(`Project with id "${id}" not found`);
     }
+
+    // Get counts before deletion for logging
+    const ticketCount = this.ticketsRepository.findByProjectId(id).length;
+    const epicCount = this.epicsRepository.findByProjectId(id).length;
+
+    // Require explicit confirmation if project has data
+    if ((ticketCount > 0 || epicCount > 0) && !confirm) {
+      throw new Error(
+        `SAFETY: Project "${project.name}" has ${ticketCount} tickets and ${epicCount} epics. ` +
+        `Add ?confirm=true to delete. This is IRREVERSIBLE.`
+      );
+    }
+
+    // Log deletion for audit trail
+    console.warn(`[DELETE] Project "${project.name}" (${id}) - ${ticketCount} tickets, ${epicCount} epics - DELETED`);
 
     return this.projectsRepository.delete(id);
   }

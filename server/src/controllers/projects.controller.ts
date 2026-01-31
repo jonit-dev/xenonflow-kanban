@@ -74,7 +74,8 @@ export class ProjectsController {
   delete = (req: Request, res: Response, next: NextFunction): void => {
     try {
       const { id } = req.params;
-      this.projectsService.delete(id);
+      const confirm = req.query.confirm === 'true';
+      this.projectsService.delete(id, confirm);
       res.status(204).send();
     } catch (error) {
       next(error);

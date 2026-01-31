@@ -304,16 +304,18 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
             {/* Footer */}
             <div className="p-6 border-t border-cyan-500/20 bg-slate-950/40 flex justify-between items-center">
               <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    onDelete(editedTicket.id);
-                    onClose();
-                  }}
-                  className="p-3 text-rose-900 hover:text-rose-500 bg-rose-950/20 border border-rose-950/30 hover:border-rose-500/40 rounded-md transition-all group"
-                  title="Terminate Unit"
-                >
-                  <Trash2 size={20} className="group-hover:scale-110 transition-transform" />
-                </button>
+                {!isNewTicket && (
+                  <button
+                    onClick={() => {
+                      onDelete(editedTicket.id);
+                      onClose();
+                    }}
+                    className="p-3 text-rose-900 hover:text-rose-500 bg-rose-950/20 border border-rose-950/30 hover:border-rose-500/40 rounded-md transition-all group"
+                    title="Terminate Unit"
+                  >
+                    <Trash2 size={20} className="group-hover:scale-110 transition-transform" />
+                  </button>
+                )}
                 {editedTicket.status !== TicketStatus.BACKLOG && (
                   <button
                     onClick={() => {

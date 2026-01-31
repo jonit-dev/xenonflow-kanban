@@ -1,4 +1,4 @@
-import { Activity, Hash, Hexagon, Plus } from 'lucide-react';
+import { Activity, AlertTriangle, Hash, Hexagon, Plus, Trash2, X } from 'lucide-react';
 import React, { useState } from 'react';
 import { Project } from '../types';
 
@@ -7,6 +7,7 @@ interface SidebarProps {
   activeProjectId: string;
   onSelectProject: (id: string) => void;
   onCreateProject: (name: string) => void;
+  onDeleteProject: (id: string) => void;
   onMotherJudgment: () => void;
   onCreateEpic: (name: string) => void;
 }
@@ -16,6 +17,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeProjectId,
   onSelectProject,
   onCreateProject,
+  onDeleteProject,
   onMotherJudgment,
   onCreateEpic
 }) => {
@@ -24,6 +26,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const [isCreatingEpic, setIsCreatingEpic] = useState(false);
   const [newEpicName, setNewEpicName] = useState('');
+
+  const [deleteConfirmProject, setDeleteConfirmProject] = useState<Project | null>(null);
+  const [deleteConfirmName, setDeleteConfirmName] = useState('');
 
   const activeProject = projects.find(p => p.id === activeProjectId);
 
@@ -44,6 +49,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
       setIsCreatingEpic(false);
     }
   }
+
+  const handleDeleteConfirm = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (deleteConfirmProject && deleteConfirmName === deleteConfirmProject.name) {
+      onDeleteProject(deleteConfirmProject.id);
+      setDeleteConfirmProject(null);
+      setDeleteConfirmName('');
+    }
+  }
+
+  const isDeleteConfirmValid = deleteConfirmProject && deleteConfirmName === deleteConfirmProject.name;
 
   // Calculate Progress
   const totalPoints = activeProject?.tickets.reduce((sum, t) => sum + (t.effort || 0), 0) || 0;
@@ -95,17 +111,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </h3>
           <div className="space-y-1">
             {projects.map(project => (
-              <button
-                key={project.id}
-                onClick={() => onSelectProject(project.id)}
-                className={`w-full text-left px-4 py-2.5 text-[11px] font-bold tracking-wider uppercase rounded-md transition-all border flex items-center justify-between group ${activeProjectId === project.id
-                    ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30 text-glow shadow-[0_0_15px_rgba(6,182,212,0.1)]'
-                    : 'text-slate-500 border-transparent hover:text-cyan-400 hover:bg-slate-900/50'
-                  }`}
-              >
-                <span className="truncate">{project.name}</span>
-                {activeProjectId === project.id && <div className="w-1 h-1 bg-cyan-400 rounded-full animate-ping"></div>}
-              </button>
+              <div key={project.id} className={`flex items-center gap-1 group ${activeProjectId === project.id ? '' : 'hover:bg-slate-900/30 rounded-md'}`}>
+                <button
+                  onClick={() => onSelectProject(project.id)}
+                  className={`flex-1 text-left px-4 py-2.5 text-[11px] font-bold tracking-wider uppercase rounded-md transition-all border flex items-center justify-between ${activeProjectId === project.id
+                      ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30 text-glow shadow-[0_0_15px_rgba(6,182,212,0.1)]'
+                      : 'text-slate-500 border-transparent hover:text-cyan-400'
+                    }`}
+                >
+                  <span className="truncate">{project.name}</span>
+                  {activeProjectId === project.id && <div className="w-1 h-1 bg-cyan-400 rounded-full animate-ping"></div>}
+                </button>
+                {activeProjectId !== project.id && (
+                  <button
+                    onClick={() => setDeleteConfirmProject(project)}
+                    className="p-2 text-slate-700 hover:text-rose-500 hover:bg-rose-950/20 rounded-md transition-all opacity-0 group-hover:opacity-100"
+                    title="Terminate Sector"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
+              </div>
             ))}
           </div>
 
@@ -192,6 +218,103 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span className="text-[8px] text-cyan-600 group-hover:text-cyan-400 transition-colors uppercase font-bold tracking-widest">Direct Interface Link</span>
         </button>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/90 backdrop-blur-md"
+            onClick={() => {
+              setDeleteConfirmProject(null);
+              setDeleteConfirmName('');
+            }}
+          />
+          <div className="relative w-full max-w-md bg-slate-900/40 backdrop-blur-2xl border border-rose-500/30 shadow-[0_0_80px_rgba(244,63,94,0.15)] rounded-lg font-mono">
+            {/* Header */}
+            <div className="p-6 border-b border-rose-500/20 bg-rose-950/20 flex justify-between items-center">
+              <div className="flex items-center gap-4">
+                <div className="p-2 bg-rose-500/20 rounded-md">
+                  <AlertTriangle className="text-rose-400 animate-pulse" size={24} />
+                </div>
+                <div>
+                  <h2 className="text-sm font-black uppercase tracking-[0.4em] text-rose-100">Sector Termination</h2>
+                  <p className="text-[10px] text-rose-800 uppercase font-black tracking-widest mt-1">
+                    IRREVERSIBLE ACTION
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setDeleteConfirmProject(null);
+                  setDeleteConfirmName('');
+                }}
+                className="text-slate-500 hover:text-rose-400 p-2 hover:bg-rose-500/10 rounded-md transition-all"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              <div className="bg-rose-950/20 border border-rose-500/30 rounded-md p-4">
+                <p className="text-[10px] text-rose-300 uppercase font-bold tracking-wider mb-2">
+                  WARNING: COMPLETE DATA LOSS
+                </p>
+                <p className="text-[11px] text-rose-200/70">
+                  All tickets, epics, and columns within <span className="text-rose-400 font-bold">{deleteConfirmProject.name}</span> will be permanently annihilated. This action cannot be undone.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-[0.3em] text-rose-700 font-black flex items-center gap-2">
+                  <AlertTriangle size={12} /> Confirm Sector Designation
+                </label>
+                <input
+                  autoFocus
+                  type="text"
+                  value={deleteConfirmName}
+                  onChange={(e) => setDeleteConfirmName(e.target.value)}
+                  placeholder={`Type "${deleteConfirmProject.name}" to confirm...`}
+                  className="w-full bg-black/40 border border-rose-900/30 text-rose-100 p-4 focus:border-rose-500 focus:outline-none font-bold text-lg uppercase tracking-wider rounded-md placeholder:text-rose-900/50"
+                />
+                <p className="text-[9px] text-rose-700/60 uppercase tracking-wider">
+                  Enter the exact sector name to enable termination
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-rose-500/20 bg-slate-950/40 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setDeleteConfirmProject(null);
+                  setDeleteConfirmName('');
+                }}
+                className="px-6 py-2 text-[10px] font-black text-slate-400 border border-slate-700 hover:text-slate-200 hover:border-slate-500 uppercase tracking-widest rounded-md transition-all"
+              >
+                Abort
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                disabled={!isDeleteConfirmValid}
+                className={`px-6 py-2 text-[10px] font-black uppercase tracking-widest rounded-md transition-all flex items-center gap-2 ${
+                  isDeleteConfirmValid
+                    ? 'bg-rose-600 text-white hover:bg-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.4)]'
+                    : 'bg-slate-800 text-slate-600 cursor-not-allowed opacity-50'
+                }`}
+              >
+                <Trash2 size={14} /> Terminate Sector
+              </button>
+            </div>
+
+            {/* Corner Decorative Orbs */}
+            <div className="absolute top-2 left-2 w-1 h-1 bg-rose-500/60 rounded-full"></div>
+            <div className="absolute top-2 right-2 w-1 h-1 bg-rose-500/60 rounded-full"></div>
+            <div className="absolute bottom-2 left-2 w-1 h-1 bg-rose-500/60 rounded-full"></div>
+            <div className="absolute bottom-2 right-2 w-1 h-1 bg-rose-500/60 rounded-full"></div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

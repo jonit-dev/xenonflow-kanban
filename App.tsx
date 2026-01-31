@@ -37,6 +37,7 @@ import {
   useUpdateTicketStatus,
   useViewModeState,
   useDeleteTicket,
+  useDeleteProject,
   useCreateTicket,
   useCreateEpic,
   useCreateProject,
@@ -82,6 +83,7 @@ export default function App() {
   const loadProjectDetails = useLoadProjectDetails();
   const saveTicket = useSaveTicket();
   const deleteTicket = useDeleteTicket();
+  const deleteProject = useDeleteProject();
   const updateTicketStatus = useUpdateTicketStatus();
   const createTicket = useCreateTicket();
   const createEpic = useCreateEpic();
@@ -216,6 +218,7 @@ export default function App() {
           await loadProjectDetails(id);
         }}
         onCreateProject={createProject}
+        onDeleteProject={deleteProject}
         onMotherJudgment={handleMotherJudgment}
         onCreateEpic={createEpic}
       />

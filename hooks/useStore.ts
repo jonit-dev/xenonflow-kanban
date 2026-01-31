@@ -6,6 +6,7 @@ export const useActiveProjectData = () => useStore((state) => state.projects.fin
 export const useSetActiveProject = () => useStore((state) => state.setActiveProjectId);
 export const useLoadProjectDetails = () => useStore((state) => state.loadProjectDetails);
 export const useCreateProject = () => useStore((state) => state.createProject);
+export const useDeleteProject = () => useStore((state) => state.deleteProject);
 export const useLoadProjects = () => useStore((state) => state.loadProjects);
 
 // Epic hooks

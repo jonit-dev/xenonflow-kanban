@@ -58,6 +58,7 @@ export interface DataSlice {
   loadProjects: () => Promise<void>;
   loadProjectDetails: (projectId: string) => Promise<void>;
   createProject: (name: string) => Promise<void>;
+  deleteProject: (projectId: string) => Promise<void>;
   createEpic: (name: string) => Promise<void>;
   createTicket: (initialStatus?: TicketStatus, startDate?: string, endDate?: string) => void;
   saveTicket: (ticket: Ticket) => Promise<void>;
@@ -147,6 +148,32 @@ export const createDataSlice: StateCreator<
       await get().loadProjectDetails(newProject.id);
     } catch (error) {
       console.error('Failed to create project:', error);
+    }
+  },
+
+  // Delete project
+  deleteProject: async (projectId) => {
+    try {
+      await projectsApi.delete(projectId);
+
+      set((state) => ({
+        projects: state.projects.filter((p) => p.id !== projectId),
+      }));
+
+      // If deleted project was active, switch to another
+      if (get().activeProjectId === projectId) {
+        const state = get();
+        const remainingProjects = state.projects.filter((p) => p.id !== projectId);
+        if (remainingProjects.length > 0) {
+          get().setActiveProjectId(remainingProjects[0].id);
+          await get().loadProjectDetails(remainingProjects[0].id);
+        } else {
+          get().setActiveProjectId('');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to delete project:', error);
+      throw error;
     }
   },
 

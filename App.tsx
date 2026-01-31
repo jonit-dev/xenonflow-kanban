@@ -174,7 +174,8 @@ export default function App() {
     const isTimeline = viewMode === 'TIMELINE';
     const isBacklog = viewMode === 'BACKLOG';
 
-    const initialStatus = isBacklog ? TicketStatus.BACKLOG : TicketStatus.TODO;
+    // Always default to BACKLOG - triage first, then promote to board
+    const initialStatus = TicketStatus.BACKLOG;
 
     let startDate: string | undefined = undefined;
     let endDate: string | undefined = undefined;

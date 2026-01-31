@@ -158,14 +158,16 @@ export const createDataSlice: StateCreator<
     try {
       await projectsApi.delete(projectId);
 
-      set((state) => ({
-        projects: state.projects.filter((p) => p.id !== projectId),
+      const state = get();
+      const remainingProjects = state.projects.filter((p) => p.id !== projectId);
+      const wasActiveProject = state.activeProjectId === projectId;
+
+      set(() => ({
+        projects: remainingProjects,
       }));
 
       // If deleted project was active, switch to another
-      if (get().activeProjectId === projectId) {
-        const state = get();
-        const remainingProjects = state.projects.filter((p) => p.id !== projectId);
+      if (wasActiveProject) {
         if (remainingProjects.length > 0) {
           get().setActiveProjectId(remainingProjects[0].id);
           await get().loadProjectDetails(remainingProjects[0].id);
@@ -296,18 +298,14 @@ export const createDataSlice: StateCreator<
     try {
       await ticketsApi.delete(ticketId);
 
-      set((state) => ({
-        projects: state.projects.map((p) =>
-          p.id === activeProjectId
-            ? { ...p, tickets: p.tickets.filter((t) => t.id !== ticketId) }
-            : p
-        ),
-      }));
-
+      // Close modal first
       if (get().modal.ticket.ticketId === ticketId) {
         get().closeTicketModal();
         get().resetDraftTicket();
       }
+
+      // Refresh from server to ensure consistency
+      await get().loadProjectDetails(activeProjectId);
     } catch (error) {
       console.error('Failed to delete ticket:', error);
     }

@@ -9,31 +9,7 @@ import { TicketDetailModal } from './components/TicketDetailModal';
 import { Button } from './components/ui/Button';
 import { Plus, Layout, Calendar, List } from 'lucide-react';
 import { consultMotherOnTicket, consultMotherOnProject } from './services/geminiService';
-
-// Initial Data
-const INITIAL_PROJECTS: Project[] = [
-  {
-    id: 'p-1',
-    name: 'Alpha Protocol',
-    epics: [
-        { id: 'e-1', name: 'Core Infrastructure', color: '#06b6d4' },
-        { id: 'e-2', name: 'Bio-Research', color: '#10b981' }
-    ],
-    tickets: [
-      { id: 't-1', title: 'Calibrate Sensors', description: 'Ensure bio-sensors are reading within 0.05% variance.', status: TicketStatus.TODO, priority: 'medium', storyPoints: 3, epicId: 'e-1', startDate: '2024-05-01', endDate: '2024-05-05' },
-      { id: 't-2', title: 'Containment Breach Drill', description: 'Simulate sector 7 failure. Measure response times.', status: TicketStatus.DONE, priority: 'critical', storyPoints: 8, epicId: 'e-1', startDate: '2024-05-06', endDate: '2024-05-07' },
-      { id: 't-4', title: 'Optimize Neural Net', description: 'Reduce latency in hive mind communication.', status: TicketStatus.BACKLOG, priority: 'high', storyPoints: 13, epicId: 'e-2' }
-    ]
-  },
-  {
-    id: 'p-2',
-    name: 'Nebula Extraction',
-    epics: [],
-    tickets: [
-      { id: 't-3', title: 'Analyze Mineral Samples', description: 'Unknown crystalline structures found in quadrant 4.', status: TicketStatus.IN_PROGRESS, priority: 'high', storyPoints: 5 }
-    ]
-  }
-];
+import { projectsApi, epicsApi, ticketsApi, type ApiProject, type ApiEpic, type ApiTicket } from './services/apiService';
 
 const COLUMNS = [
   { id: TicketStatus.TODO, title: 'PENDING' },
@@ -46,10 +22,40 @@ const EPIC_COLORS = ['#06b6d4', '#10b981', '#8b5cf6', '#f43f5e', '#f59e0b', '#ec
 
 type ViewMode = 'BOARD' | 'TIMELINE' | 'BACKLOG';
 
+// Helper to map API types to frontend types
+const mapApiTicket = (api: ApiTicket): Ticket => ({
+  id: api.id,
+  title: api.title,
+  description: api.description || '',
+  status: api.status as TicketStatus,
+  priority: api.priority as 'low' | 'medium' | 'high' | 'critical',
+  storyPoints: api.storyPoints,
+  epicId: api.epicId,
+  assignee: api.assigneeId,
+  startDate: api.startDate,
+  endDate: api.endDate,
+  aiInsights: api.aiInsights,
+});
+
+const mapApiEpic = (api: ApiEpic): Epic => ({
+  id: api.id,
+  name: api.name,
+  color: api.color,
+});
+
+const mapApiProject = (api: ApiProject, epics: Epic[], tickets: Ticket[]): Project => ({
+  id: api.id,
+  name: api.name,
+  description: api.description,
+  epics,
+  tickets,
+});
+
 export default function App() {
-  const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS);
-  const [activeProjectId, setActiveProjectId] = useState<string>(INITIAL_PROJECTS[0].id);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [activeProjectId, setActiveProjectId] = useState<string>('');
   const [viewMode, setViewMode] = useState<ViewMode>('BOARD');
+  const [loading, setLoading] = useState(true);
   
   // AI Modal State
   const [modalOpen, setModalOpen] = useState(false);
@@ -60,110 +66,233 @@ export default function App() {
   // Ticket Edit Modal State
   const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
 
-  // Active Project Derived State
-  const activeProject = projects.find(p => p.id === activeProjectId) || projects[0];
-
   // Drag and Drop State
   const [draggedTicketId, setDraggedTicketId] = useState<string | null>(null);
 
-  // --- Handlers ---
+  // Active Project Derived State
+  const activeProject = projects.find(p => p.id === activeProjectId);
 
-  const handleCreateProject = (name: string) => {
-    const newProject: Project = {
-      id: `p-${Date.now()}`,
-      name,
-      epics: [],
-      tickets: []
-    };
-    setProjects([...projects, newProject]);
-    setActiveProjectId(newProject.id);
+  // Load all projects on mount
+  useEffect(() => {
+    loadProjects();
+
+    // Test API connectivity
+    fetch('http://localhost:3333/health')
+      .then(r => r.json())
+      .then(d => console.log('API health check:', d))
+      .catch(e => console.error('API health check failed:', e));
+  }, []);
+
+  // Load project details when active project changes
+  useEffect(() => {
+    if (activeProjectId) {
+      loadProjectDetails(activeProjectId);
+    }
+  }, [activeProjectId]);
+
+  const loadProjects = async () => {
+    try {
+      setLoading(true);
+      const apiProjects = await projectsApi.list();
+      const mappedProjects = apiProjects.map(p => ({
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        epics: [] as Epic[],
+        tickets: [] as Ticket[],
+      }));
+      setProjects(mappedProjects);
+      
+      if (mappedProjects.length > 0 && !activeProjectId) {
+        setActiveProjectId(mappedProjects[0].id);
+      }
+    } catch (error) {
+      console.error('Failed to load projects:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleCreateEpic = (name: string) => {
-      const newEpic: Epic = {
-          id: `e-${Date.now()}`,
-          name,
-          color: EPIC_COLORS[activeProject.epics.length % EPIC_COLORS.length]
-      };
+  const loadProjectDetails = async (projectId: string) => {
+    try {
+      const { project, epics, tickets } = await projectsApi.getWithDetails(projectId);
       
-      const updatedProjects = projects.map(p => {
-          if (p.id === activeProjectId) {
-              return { ...p, epics: [...p.epics, newEpic] };
-          }
-          return p;
-      });
-      setProjects(updatedProjects);
+      const mappedEpics = epics.map(mapApiEpic);
+      const mappedTickets = tickets.map(mapApiTicket);
+      const mappedProject = mapApiProject(project, mappedEpics, mappedTickets);
+
+      setProjects(prev => prev.map(p =>
+        p.id === projectId ? mappedProject : p
+      ));
+    } catch (error) {
+      console.error('Failed to load project details:', error);
+    }
+  };
+
+  // --- Handlers ---
+
+  const handleCreateProject = async (name: string) => {
+    try {
+      const newProject = await projectsApi.create({ name });
+      const mappedProject = mapApiProject(newProject, [], []);
+      setProjects([...projects, mappedProject]);
+      setActiveProjectId(newProject.id);
+    } catch (error) {
+      console.error('Failed to create project:', error);
+    }
+  };
+
+  const handleCreateEpic = async (name: string) => {
+    if (!activeProjectId) return;
+    
+    try {
+      const color = EPIC_COLORS[activeProject?.epics.length || 0 % EPIC_COLORS.length];
+      const newEpic = await epicsApi.create({ projectId: activeProjectId, name, color });
+      const mappedEpic = mapApiEpic(newEpic);
+
+      setProjects(prev => prev.map(p => {
+        if (p.id === activeProjectId) {
+          return { ...p, epics: [...p.epics, mappedEpic] };
+        }
+        return p;
+      }));
+    } catch (error) {
+      console.error('Failed to create epic:', error);
+    }
   }
 
   const handleCreateTicket = () => {
-    // Determine context-based defaults
+    console.log('Spawn Entity button clicked');
+    console.log('activeProjectId:', activeProjectId);
+    console.log('viewMode:', viewMode);
+
+    if (!activeProjectId) {
+      alert('No active project selected');
+      return;
+    }
+
     const isTimeline = viewMode === 'TIMELINE';
     const isBacklog = viewMode === 'BACKLOG';
 
-    // Status logic
     const initialStatus = isBacklog ? TicketStatus.BACKLOG : TicketStatus.TODO;
 
-    // Date logic (Timeline requires dates to be visible)
     let startDate: string | undefined = undefined;
     let endDate: string | undefined = undefined;
 
     if (isTimeline) {
-        const now = new Date();
-        startDate = now.toISOString().split('T')[0];
-        const end = new Date(now);
-        end.setDate(end.getDate() + 2); // Default 2 day duration
-        endDate = end.toISOString().split('T')[0];
+      const now = new Date();
+      startDate = now.toISOString().split('T')[0];
+      const end = new Date(now);
+      end.setDate(end.getDate() + 2);
+      endDate = end.toISOString().split('T')[0];
     }
 
-    // Create a DRAFT ticket. We DO NOT add it to the project state yet.
-    // It is only added when the user clicks "SAVE" in the modal.
     const draftTicket: Ticket = {
-      id: `t-${Date.now()}`,
+      id: '', // Will be set by API
       title: 'UNIDENTIFIED UNIT',
       description: '',
       status: initialStatus,
       priority: 'low',
       storyPoints: 0,
       startDate,
-      endDate
+      endDate,
+      epicId: undefined,
+      assignee: undefined,
     };
 
+    console.log('Opening modal for ticket:', draftTicket);
     setEditingTicket(draftTicket);
+    console.log('Modal should now be open. editingTicket state set.');
   };
 
-  const handleSaveTicket = (ticketToSave: Ticket) => {
-    const updatedProjects = projects.map(p => {
+  const handleSaveTicket = async (ticketToSave: Ticket) => {
+    if (!activeProjectId) {
+      console.error('No active project');
+      return;
+    }
+
+    try {
+      const isNew = !ticketToSave.id || ticketToSave.id === '';
+      console.log('Saving ticket:', { isNew, ticket: ticketToSave });
+
+      let savedTicket: ApiTicket;
+
+      if (isNew) {
+        // Create new ticket
+        savedTicket = await ticketsApi.create({
+          projectId: activeProjectId,
+          title: ticketToSave.title,
+          description: ticketToSave.description,
+          status: ticketToSave.status,
+          priority: ticketToSave.priority,
+          storyPoints: ticketToSave.storyPoints,
+          epicId: ticketToSave.epicId,
+          assigneeId: ticketToSave.assignee,
+          startDate: ticketToSave.startDate,
+          endDate: ticketToSave.endDate,
+        });
+      } else {
+        // Update existing ticket
+        savedTicket = await ticketsApi.update(ticketToSave.id, {
+          title: ticketToSave.title,
+          description: ticketToSave.description,
+          status: ticketToSave.status,
+          priority: ticketToSave.priority,
+          storyPoints: ticketToSave.storyPoints,
+          epicId: ticketToSave.epicId,
+          assigneeId: ticketToSave.assignee,
+          startDate: ticketToSave.startDate,
+          endDate: ticketToSave.endDate,
+        });
+      }
+
+      console.log('Saved ticket:', savedTicket);
+
+      // Refresh project details to get updated ticket list
+      await loadProjectDetails(activeProjectId);
+      setEditingTicket(null);
+    } catch (error) {
+      console.error('Failed to save ticket:', error);
+      alert('Failed to save ticket. Check console for details.');
+    }
+  };
+
+  const handleDeleteTicket = async (ticketId: string) => {
+    if (!activeProjectId) return;
+
+    try {
+      await ticketsApi.delete(ticketId);
+      
+      setProjects(prev => prev.map(p => {
         if (p.id === activeProjectId) {
-            const exists = p.tickets.some(t => t.id === ticketToSave.id);
-            let newTickets;
-            
-            if (exists) {
-                // Update existing
-                newTickets = p.tickets.map(t => t.id === ticketToSave.id ? ticketToSave : t);
-            } else {
-                // Create new (this happens when saving the draft)
-                newTickets = [...p.tickets, ticketToSave];
-            }
-            return { ...p, tickets: newTickets };
+          return { ...p, tickets: p.tickets.filter(t => t.id !== ticketId) };
         }
         return p;
-    });
-    setProjects(updatedProjects);
-  };
-
-  const handleDeleteTicket = (ticketId: string) => {
-    const updatedProjects = projects.map(p => {
-      if (p.id === activeProjectId) {
-        return { ...p, tickets: p.tickets.filter(t => t.id !== ticketId) };
+      }));
+      
+      if (editingTicket?.id === ticketId) {
+        setEditingTicket(null);
       }
-      return p;
-    });
-    setProjects(updatedProjects);
+    } catch (error) {
+      console.error('Failed to delete ticket:', error);
+    }
   };
 
-  const handleMoveToBoard = (ticket: Ticket) => {
-      // Reuse handleSaveTicket for status updates from Backlog view
-      handleSaveTicket({ ...ticket, status: TicketStatus.TODO });
+  const handleMoveToBoard = async (ticket: Ticket) => {
+    if (!activeProjectId || !ticket.id) return;
+
+    try {
+      const updated = await ticketsApi.updateStatus(ticket.id, TicketStatus.TODO);
+      
+      setProjects(prev => prev.map(p => {
+        if (p.id === activeProjectId) {
+          return { ...p, tickets: p.tickets.map(t => t.id === ticket.id ? mapApiTicket(updated) : t) };
+        }
+        return p;
+      }));
+    } catch (error) {
+      console.error('Failed to move ticket to board:', error);
+    }
   };
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
@@ -175,23 +304,17 @@ export default function App() {
     e.preventDefault();
   };
 
-  const handleDrop = (e: React.DragEvent, status: TicketStatus) => {
+  const handleDrop = async (e: React.DragEvent, status: TicketStatus) => {
     e.preventDefault();
-    if (!draggedTicketId) return;
+    if (!draggedTicketId || !activeProjectId) return;
 
-    const updatedProjects = projects.map(p => {
-      if (p.id === activeProjectId) {
-        const ticket = p.tickets.find(t => t.id === draggedTicketId);
-        if (ticket && ticket.status !== status) {
-            const others = p.tickets.filter(t => t.id !== draggedTicketId);
-            const updatedTicket = { ...ticket, status };
-            return { ...p, tickets: [...others, updatedTicket] };
-        }
-      }
-      return p;
-    });
+    try {
+      await ticketsApi.updateStatus(draggedTicketId, status);
+      await loadProjectDetails(activeProjectId);
+    } catch (error) {
+      console.error('Failed to drop ticket:', error);
+    }
 
-    setProjects(updatedProjects);
     setDraggedTicketId(null);
   };
 
@@ -203,23 +326,60 @@ export default function App() {
     setModalOpen(true);
     setIsAiLoading(true);
 
-    const advice = await consultMotherOnTicket(ticket, epicName);
-    
-    setModalContent(advice);
-    setIsAiLoading(false);
+    try {
+      const advice = await consultMotherOnTicket(ticket, epicName);
+      setModalContent(advice);
+    } catch (error) {
+      setModalContent('Communication error with Mother AI.');
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
   const handleMotherJudgment = async () => {
+    if (!activeProject) return;
+
     setModalTitle(`Sector Analysis: ${activeProject.name}`);
     setModalContent('');
     setModalOpen(true);
     setIsAiLoading(true);
 
-    const judgment = await consultMotherOnProject(activeProject);
-
-    setModalContent(judgment);
-    setIsAiLoading(false);
+    try {
+      const judgment = await consultMotherOnProject(activeProject);
+      setModalContent(judgment);
+    } catch (error) {
+      setModalContent('Communication error with Mother AI.');
+    } finally {
+      setIsAiLoading(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex h-screen w-screen bg-[#020617] text-cyan-50 items-center justify-center font-mono">
+        <div className="text-cyan-400">INITIALIZING SYSTEM...</div>
+      </div>
+    );
+  }
+
+  if (projects.length === 0) {
+    return (
+      <div className="flex h-screen w-screen bg-[#020617] text-cyan-50 items-center justify-center font-mono">
+        <div className="text-center">
+          <div className="text-cyan-400 mb-4">NO SECTORS FOUND</div>
+          <Button onClick={() => handleCreateProject('New Sector')}>CREATE SECTOR</Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!activeProject) {
+    return (
+      <div className="flex h-screen w-screen bg-[#020617] text-cyan-50 items-center justify-center font-mono">
+        <div className="text-cyan-400">SELECT SECTOR TO PROCEED</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen w-screen bg-[#020617] text-cyan-50 overflow-hidden font-mono">
@@ -253,24 +413,24 @@ export default function App() {
               <div className="bg-slate-900/50 p-1 rounded-md border border-slate-700 flex gap-1">
                   <button 
                     onClick={() => setViewMode('BOARD')}
-                    className={`p-2 rounded text-xs transition-colors flex items-center gap-2 ${viewMode === 'BOARD' ? 'bg-cyan-950/50 text-cyan-400 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                    className={`px-3 py-2 rounded text-xs font-medium transition-colors flex items-center gap-2 ${viewMode === 'BOARD' ? 'bg-cyan-950/50 text-cyan-400 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
                     title="Board View"
                   >
-                      <Layout size={16} /> 
+                      <Layout size={16} /> Board
                   </button>
                   <button 
                     onClick={() => setViewMode('TIMELINE')}
-                    className={`p-2 rounded text-xs transition-colors flex items-center gap-2 ${viewMode === 'TIMELINE' ? 'bg-cyan-950/50 text-cyan-400 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                    className={`px-3 py-2 rounded text-xs font-medium transition-colors flex items-center gap-2 ${viewMode === 'TIMELINE' ? 'bg-cyan-950/50 text-cyan-400 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
                     title="Timeline View"
                   >
-                      <Calendar size={16} /> 
+                      <Calendar size={16} /> Timeline
                   </button>
                   <button 
                     onClick={() => setViewMode('BACKLOG')}
-                    className={`p-2 rounded text-xs transition-colors flex items-center gap-2 ${viewMode === 'BACKLOG' ? 'bg-cyan-950/50 text-cyan-400 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                    className={`px-3 py-2 rounded text-xs font-medium transition-colors flex items-center gap-2 ${viewMode === 'BACKLOG' ? 'bg-orange-950/50 text-orange-400 shadow-sm border border-orange-500/30' : 'text-slate-500 hover:text-orange-300 hover:bg-orange-950/20'}`}
                     title="Backlog View"
                   >
-                      <List size={16} /> 
+                      <List size={16} /> Backlog
                   </button>
               </div>
 

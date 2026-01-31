@@ -9,16 +9,9 @@ import { Sidebar } from './components/Sidebar';
 import { TicketDetailModal } from './components/TicketDetailModal';
 import { TimelineView } from './components/TimelineView';
 import { Button } from './components/ui/Button';
-import { epicsApi, projectsApi, ticketsApi, type ApiEpic, type ApiProject, type ApiTicket } from './services/apiService';
+import { columnsApi, epicsApi, projectsApi, ticketsApi, type ApiEpic, type ApiProject, type ApiTicket } from './services/apiService';
 import { consultMotherOnProject, consultMotherOnTicket } from './services/geminiService';
-import { Epic, Project, Ticket, TicketStatus } from './types';
-
-const COLUMNS = [
-  { id: TicketStatus.TODO, title: 'PENDING' },
-  { id: TicketStatus.IN_PROGRESS, title: 'ACTIVE' },
-  { id: TicketStatus.REVIEW, title: 'ANALYSIS' },
-  { id: TicketStatus.DONE, title: 'ARCHIVED' },
-];
+import { ColumnType, Epic, Project, Ticket, TicketStatus } from './types';
 
 const EPIC_COLORS = ['#06b6d4', '#10b981', '#8b5cf6', '#f43f5e', '#f59e0b', '#ec4899'];
 
@@ -45,12 +38,21 @@ const mapApiEpic = (api: ApiEpic): Epic => ({
   color: api.color,
 });
 
-const mapApiProject = (api: ApiProject, epics: Epic[], tickets: Ticket[]): Project => ({
+const mapApiColumn = (api: any): ColumnType => ({
+  id: api.id,
+  projectId: api.projectId,
+  title: api.title,
+  statusKey: api.statusKey,
+  position: api.position,
+});
+
+const mapApiProject = (api: ApiProject, epics: Epic[], tickets: Ticket[], columns: ColumnType[]): Project => ({
   id: api.id,
   name: api.name,
   description: api.description,
   epics,
   tickets,
+  columns,
 });
 
 export default function App() {
@@ -102,6 +104,7 @@ export default function App() {
         description: p.description,
         epics: [] as Epic[],
         tickets: [] as Ticket[],
+        columns: [] as ColumnType[],
       }));
       setProjects(mappedProjects);
 
@@ -117,11 +120,12 @@ export default function App() {
 
   const loadProjectDetails = async (projectId: string) => {
     try {
-      const { project, epics, tickets } = await projectsApi.getWithDetails(projectId);
+      const { project, epics, tickets, columns } = await projectsApi.getWithDetails(projectId);
 
       const mappedEpics = epics.map(mapApiEpic);
       const mappedTickets = tickets.map(mapApiTicket);
-      const mappedProject = mapApiProject(project, mappedEpics, mappedTickets);
+      const mappedColumns = columns.map(mapApiColumn);
+      const mappedProject = mapApiProject(project, mappedEpics, mappedTickets, mappedColumns);
 
       setProjects(prev => prev.map(p =>
         p.id === projectId ? mappedProject : p
@@ -136,7 +140,9 @@ export default function App() {
   const handleCreateProject = async (name: string) => {
     try {
       const newProject = await projectsApi.create({ name });
-      const mappedProject = mapApiProject(newProject, [], []);
+      const { columns } = await projectsApi.getWithDetails(newProject.id);
+      const mappedColumns = columns.map(mapApiColumn);
+      const mappedProject = mapApiProject(newProject, [], [], mappedColumns);
       setProjects([...projects, mappedProject]);
       setActiveProjectId(newProject.id);
     } catch (error) {
@@ -299,6 +305,37 @@ export default function App() {
       }));
     } catch (error) {
       console.error('Failed to move ticket to board:', error);
+    }
+  };
+
+  const handleCreateColumn = async (title: string, statusKey: string) => {
+    if (!activeProjectId) return;
+    try {
+      await columnsApi.create({ projectId: activeProjectId, title, statusKey });
+      await loadProjectDetails(activeProjectId);
+    } catch (error) {
+      console.error('Failed to create column:', error);
+    }
+  };
+
+  const handleUpdateColumn = async (columnId: string, title: string) => {
+    if (!activeProjectId) return;
+    try {
+      await columnsApi.update(columnId, { title });
+      await loadProjectDetails(activeProjectId);
+    } catch (error) {
+      console.error('Failed to update column:', error);
+    }
+  };
+
+  const handleDeleteColumn = async (columnId: string) => {
+    if (!activeProjectId) return;
+    if (!confirm('Are you sure you want to delete this column? Tickets in this column will remain in the database but won\'t be visible on the board.')) return;
+    try {
+      await columnsApi.delete(columnId);
+      await loadProjectDetails(activeProjectId);
+    } catch (error) {
+      console.error('Failed to delete column:', error);
     }
   };
 
@@ -469,17 +506,20 @@ export default function App() {
                 className="absolute inset-0 overflow-x-auto overflow-y-hidden p-6"
               >
                 <div className="flex h-full gap-6 min-w-max">
-                  {COLUMNS.map(col => (
+                  {activeProject.columns.map(col => (
                     <Column
                       key={col.id}
-                      status={col.id}
+                      id={col.id}
+                      status={col.statusKey as TicketStatus}
                       title={col.title}
                       epics={activeProject.epics}
-                      tickets={activeProject.tickets.filter(t => t.status === col.id)}
+                      tickets={activeProject.tickets.filter(t => t.status === col.statusKey)}
                       onDrop={handleDrop}
                       onDragOver={handleDragOver}
                       onDragStart={handleDragStart}
                       onTicketClick={setEditingTicket}
+                      onRename={handleUpdateColumn}
+                      onDelete={handleDeleteColumn}
                     />
                   ))}
                 </div>

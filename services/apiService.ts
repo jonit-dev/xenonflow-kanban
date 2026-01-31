@@ -47,6 +47,16 @@ export interface ApiUser {
   updatedAt: string;
 }
 
+export interface ApiColumn {
+  id: string;
+  projectId: string;
+  title: string;
+  statusKey: string;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // API Client
 async function api<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE}${endpoint}`;
@@ -72,14 +82,20 @@ export const projectsApi = {
 
   get: (id: string) => api<ApiProject>(`/projects/${id}`),
 
-  getWithDetails: async (id: string): Promise<{
+  getWithDetails: async (
+    id: string,
+  ): Promise<{
     project: ApiProject;
     epics: ApiEpic[];
     tickets: ApiTicket[];
+    columns: ApiColumn[];
   }> => {
-    const response = await api<{ epics: ApiEpic[]; tickets: ApiTicket[] }>(`/projects/${id}/details`);
-    const project = await api<ApiProject>(`/projects/${id}`);
-    return { project, ...response };
+    return api<{
+      project: ApiProject;
+      epics: ApiEpic[];
+      tickets: ApiTicket[];
+      columns: ApiColumn[];
+    }>(`/projects/${id}/details`);
   },
 
   create: (data: { name: string; description?: string }) =>
@@ -132,7 +148,8 @@ export const epicsApi = {
 
 // Tickets
 export const ticketsApi = {
-  list: (projectId: string) => api<ApiTicket[]>(`/tickets/project/${projectId}`),
+  list: (projectId: string) =>
+    api<ApiTicket[]>(`/tickets/project/${projectId}`),
 
   get: (id: string) => api<ApiTicket>(`/tickets/${id}`),
 
@@ -180,17 +197,22 @@ export const ticketsApi = {
     // Convert camelCase to snake_case for backend
     const snakeCaseData: any = {};
     if (data.title !== undefined) snakeCaseData.title = data.title;
-    if (data.description !== undefined) snakeCaseData.description = data.description;
+    if (data.description !== undefined)
+      snakeCaseData.description = data.description;
     if (data.status !== undefined) snakeCaseData.status = data.status;
     if (data.priority !== undefined) snakeCaseData.priority = data.priority;
-    if (data.storyPoints !== undefined) snakeCaseData.story_points = data.storyPoints;
+    if (data.storyPoints !== undefined)
+      snakeCaseData.story_points = data.storyPoints;
     if (data.epicId !== undefined) snakeCaseData.epic_id = data.epicId;
-    if (data.assigneeId !== undefined) snakeCaseData.assignee_id = data.assigneeId;
+    if (data.assigneeId !== undefined)
+      snakeCaseData.assignee_id = data.assigneeId;
     if (data.startDate !== undefined) snakeCaseData.start_date = data.startDate;
     if (data.endDate !== undefined) snakeCaseData.end_date = data.endDate;
-    if (data.aiInsights !== undefined) snakeCaseData.ai_insights = data.aiInsights;
+    if (data.aiInsights !== undefined)
+      snakeCaseData.ai_insights = data.aiInsights;
     if (data.flagged !== undefined) snakeCaseData.flagged = data.flagged;
-    if (data.requiresHuman !== undefined) snakeCaseData.requiresHuman = data.requiresHuman;
+    if (data.requiresHuman !== undefined)
+      snakeCaseData.requiresHuman = data.requiresHuman;
 
     return api<ApiTicket>(`/tickets/${id}`, {
       method: 'PUT',
@@ -206,6 +228,50 @@ export const ticketsApi = {
 
   delete: (id: string) =>
     api<void>(`/tickets/${id}`, {
+      method: 'DELETE',
+    }),
+};
+
+// Columns
+export const columnsApi = {
+  list: (projectId: string) =>
+    api<ApiColumn[]>(`/columns/project/${projectId}`),
+
+  create: (data: {
+    projectId: string;
+    title: string;
+    statusKey: string;
+    position?: number;
+  }) => {
+    const snakeCaseData = {
+      project_id: data.projectId,
+      title: data.title,
+      status_key: data.statusKey,
+      position: data.position,
+    };
+    return api<ApiColumn>('/columns', {
+      method: 'POST',
+      body: JSON.stringify(snakeCaseData),
+    });
+  },
+
+  update: (
+    id: string,
+    data: { title?: string; statusKey?: string; position?: number },
+  ) => {
+    const snakeCaseData: any = {};
+    if (data.title !== undefined) snakeCaseData.title = data.title;
+    if (data.statusKey !== undefined) snakeCaseData.status_key = data.statusKey;
+    if (data.position !== undefined) snakeCaseData.position = data.position;
+
+    return api<ApiColumn>(`/columns/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(snakeCaseData),
+    });
+  },
+
+  delete: (id: string) =>
+    api<void>(`/columns/${id}`, {
       method: 'DELETE',
     }),
 };

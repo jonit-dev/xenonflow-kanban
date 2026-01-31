@@ -1,4 +1,4 @@
-import { Activity, BrainCircuit, Calendar, Hash } from 'lucide-react';
+import { Activity, BrainCircuit, Calendar, Hash, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import React from 'react';
 import { Epic, Ticket, TicketStatus } from '../types';
 
@@ -99,6 +99,7 @@ export const TicketCard: React.FC<TicketCardProps> = ({ ticket, epic, onDragStar
 // --- Column Component ---
 
 interface ColumnProps {
+  id: string;
   status: TicketStatus;
   title: string;
   tickets: Ticket[];
@@ -107,9 +108,12 @@ interface ColumnProps {
   onDragOver: (e: React.DragEvent) => void;
   onDragStart: (e: React.DragEvent, id: string) => void;
   onTicketClick: (ticket: Ticket) => void;
+  onRename?: (id: string, newTitle: string) => void;
+  onDelete?: (id: string) => void;
 }
 
 export const Column: React.FC<ColumnProps> = ({
+  id,
   status,
   title,
   tickets,
@@ -117,29 +121,93 @@ export const Column: React.FC<ColumnProps> = ({
   onDrop,
   onDragOver,
   onDragStart,
-  onTicketClick
+  onTicketClick,
+  onRename,
+  onDelete
 }) => {
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [newTitle, setNewTitle] = React.useState(title);
+  const [showOptions, setShowOptions] = React.useState(false);
+
+  const handleRename = () => {
+    if (onRename && newTitle.trim() !== '' && newTitle !== title) {
+      onRename(id, newTitle);
+    }
+    setIsEditing(false);
+    setShowOptions(false);
+  };
+
   return (
     <div
-      className="flex flex-col h-full min-w-[320px] w-full bg-slate-950/20 backdrop-blur-sm border border-cyan-900/20 rounded-lg overflow-hidden"
+      className="flex flex-col h-full min-w-[280px] max-w-[340px] w-full bg-slate-950/20 backdrop-blur-sm border border-cyan-900/20 rounded-lg overflow-hidden group/column"
       onDrop={(e) => onDrop(e, status)}
       onDragOver={onDragOver}
     >
       <div className="p-4 border-b border-cyan-900/30 flex justify-between items-center bg-cyan-950/10">
-        <div className="flex items-center gap-3">
-          <div className={`w-2 h-2 rounded-sm rotate-45 ${status === TicketStatus.TODO ? 'bg-slate-600' :
-              status === TicketStatus.IN_PROGRESS ? 'bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,1)]' :
-                status === TicketStatus.REVIEW ? 'bg-purple-500' :
-                  'bg-emerald-500'
+        <div className="flex items-center gap-3 flex-1 overflow-hidden">
+          <div className={`w-2 h-2 rounded-sm rotate-45 shrink-0 ${status === TicketStatus.TODO ? 'bg-slate-600' :
+            status === TicketStatus.IN_PROGRESS ? 'bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,1)]' :
+              status === TicketStatus.REVIEW ? 'bg-purple-500' :
+                'bg-emerald-500'
             }`}></div>
-          <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-cyan-200 text-glow">{title}</h3>
+
+          {isEditing ? (
+            <div className="flex items-center gap-1 w-full">
+              <input
+                autoFocus
+                type="text"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                onBlur={handleRename}
+                onKeyDown={(e) => e.key === 'Enter' && handleRename()}
+                className="bg-slate-900 border border-cyan-500/50 text-[10px] font-black uppercase tracking-[0.3em] text-cyan-200 px-2 py-0.5 rounded outline-none w-full"
+              />
+            </div>
+          ) : (
+            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-cyan-200 text-glow truncate">{title}</h3>
+          )}
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-[10px] text-cyan-800 font-black font-mono flex items-center">
-            <Hash size={10} className="mr-0.5" />
-            {tickets.reduce((acc, t) => acc + (t.storyPoints || 0), 0)}
-          </span>
-          <span className="text-[10px] text-cyan-700 font-black font-mono">[{tickets.length}]</span>
+
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 text-cyan-800">
+            <span className="text-[10px] font-black font-mono flex items-center">
+              <Hash size={10} className="mr-0.5" />
+              {tickets.reduce((acc, t) => acc + (t.storyPoints || 0), 0)}
+            </span>
+            <span className="text-[10px] font-black font-mono">[{tickets.length}]</span>
+          </div>
+
+          <div className="relative">
+            <button
+              onClick={() => setShowOptions(!showOptions)}
+              className="p-1 hover:bg-cyan-500/10 rounded transition-colors text-cyan-700 hover:text-cyan-400 opacity-0 group-hover/column:opacity-100"
+            >
+              <MoreVertical size={14} />
+            </button>
+
+            {showOptions && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setShowOptions(false)}
+                />
+                <div className="absolute right-0 mt-1 w-32 bg-slate-900 border border-cyan-500/30 rounded shadow-xl z-20 overflow-hidden">
+                  <button
+                    onClick={() => { setIsEditing(true); setShowOptions(false); }}
+                    className="w-full text-left px-3 py-2 text-[9px] font-black uppercase tracking-widest text-cyan-400 hover:bg-cyan-500/10 flex items-center gap-2"
+                  >
+                    <Pencil size={10} /> Rename
+                  </button>
+                  <button
+                    onClick={() => { if (onDelete) onDelete(id); setShowOptions(false); }}
+                    className="w-full text-left px-3 py-2 text-[9px] font-black uppercase tracking-widest text-rose-500 hover:bg-rose-500/10 flex items-center gap-2"
+                  >
+                    <Trash2 size={10} /> Delete
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 

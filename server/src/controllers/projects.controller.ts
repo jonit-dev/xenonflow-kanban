@@ -1,14 +1,11 @@
-import { Service, Inject } from 'typedi';
+import { Service } from 'typedi';
 import { Request, Response, NextFunction } from 'express';
 import { ProjectsService } from '../services/projects.service';
 import { CreateProjectDto, UpdateProjectDto } from '../types';
 
 @Service()
 export class ProjectsController {
-  constructor(
-    @Inject(() => ProjectsService)
-    private projectsService: ProjectsService,
-  ) {}
+  constructor(private projectsService: ProjectsService) {}
 
   getAll = (_req: Request, res: Response, next: NextFunction): void => {
     try {
@@ -36,12 +33,14 @@ export class ProjectsController {
   getByIdWithDetails = (req: Request, res: Response, next: NextFunction): void => {
     try {
       const { id } = req.params;
-      const project = this.projectsService.getByIdWithDetails(id);
-      if (!project) {
+      const details = this.projectsService.getByIdWithDetails(id);
+      if (!details) {
         res.status(404).json({ error: 'Project not found' });
         return;
       }
-      res.json(project);
+      // Return nested structure expected by frontend: { project, epics, tickets, columns }
+      const { epics, tickets, columns, ...project } = details;
+      res.json({ project, epics, tickets, columns });
     } catch (error) {
       next(error);
     }

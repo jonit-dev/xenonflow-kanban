@@ -31,6 +31,16 @@ export interface DbProject {
   updated_at: number;
 }
 
+export interface DbColumn {
+  id: string;
+  project_id: string;
+  title: string;
+  status_key: string;
+  position: number;
+  created_at: number;
+  updated_at: number;
+}
+
 export interface DbEpic {
   id: string;
   project_id: string;
@@ -117,6 +127,19 @@ export interface UpdateTicketStatusDto {
   status: TicketStatus;
 }
 
+export interface CreateColumnDto {
+  project_id: string;
+  title: string;
+  status_key: string;
+  position?: number;
+}
+
+export interface UpdateColumnDto {
+  title?: string;
+  status_key?: string;
+  position?: number;
+}
+
 export interface CreateUserDto {
   username: string;
   email: string;
@@ -154,6 +177,16 @@ export interface Epic {
   updatedAt: string;
 }
 
+export interface Column {
+  id: string;
+  projectId: string;
+  title: string;
+  statusKey: string;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Ticket {
   id: string;
   projectId: string;
@@ -168,7 +201,7 @@ export interface Ticket {
   endDate?: string;
   aiInsights?: string;
   position: number;
-  flagged?: boolean;  // Important/urgent flag
+  flagged?: boolean; // Important/urgent flag
   requiresHuman?: boolean; // Needs human intervention
   createdAt: string;
   updatedAt: string;
@@ -177,4 +210,5 @@ export interface Ticket {
 export interface ProjectWithDetails extends Project {
   epics: Epic[];
   tickets: Ticket[];
+  columns: Column[];
 }

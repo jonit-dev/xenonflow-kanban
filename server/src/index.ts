@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { createApp, gracefulShutdown } from './app';
 import { setupDI } from './di-container';
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3333;
 
 async function main() {
   // Setup TypeDI and run migrations

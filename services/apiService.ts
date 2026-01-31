@@ -33,6 +33,8 @@ export interface ApiTicket {
   endDate?: string;
   aiInsights?: string;
   position: number;
+  flagged?: boolean;
+  requiresHuman?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -145,6 +147,8 @@ export const ticketsApi = {
     assigneeId?: string;
     startDate?: string;
     endDate?: string;
+    flagged?: boolean;
+    requiresHuman?: boolean;
   }) => {
     console.log('ticketsApi.create called with:', data);
 
@@ -160,6 +164,8 @@ export const ticketsApi = {
       assignee_id: data.assigneeId,
       start_date: data.startDate,
       end_date: data.endDate,
+      flagged: data.flagged,
+      requiresHuman: data.requiresHuman,
     };
 
     console.log('Sending to backend (snake_case):', snakeCaseData);
@@ -183,6 +189,8 @@ export const ticketsApi = {
     if (data.startDate !== undefined) snakeCaseData.start_date = data.startDate;
     if (data.endDate !== undefined) snakeCaseData.end_date = data.endDate;
     if (data.aiInsights !== undefined) snakeCaseData.ai_insights = data.aiInsights;
+    if (data.flagged !== undefined) snakeCaseData.flagged = data.flagged;
+    if (data.requiresHuman !== undefined) snakeCaseData.requiresHuman = data.requiresHuman;
 
     return api<ApiTicket>(`/tickets/${id}`, {
       method: 'PUT',

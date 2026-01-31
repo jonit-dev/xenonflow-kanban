@@ -1,15 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { Project, Ticket, TicketStatus, Epic } from './types';
-import { Sidebar } from './components/Sidebar';
-import { Column } from './components/BoardComponents';
-import { TimelineView } from './components/TimelineView';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Calendar, Layout, List, Plus, Terminal } from 'lucide-react';
+import React, { Suspense, useEffect, useState } from 'react';
+import { Background3D } from './components/Background3D';
 import { BacklogView } from './components/BacklogView';
+import { Column } from './components/BoardComponents';
 import { MotherModal } from './components/MotherModal';
+import { Sidebar } from './components/Sidebar';
 import { TicketDetailModal } from './components/TicketDetailModal';
+import { TimelineView } from './components/TimelineView';
 import { Button } from './components/ui/Button';
-import { Plus, Layout, Calendar, List } from 'lucide-react';
-import { consultMotherOnTicket, consultMotherOnProject } from './services/geminiService';
-import { projectsApi, epicsApi, ticketsApi, type ApiProject, type ApiEpic, type ApiTicket } from './services/apiService';
+import { epicsApi, projectsApi, ticketsApi, type ApiEpic, type ApiProject, type ApiTicket } from './services/apiService';
+import { consultMotherOnProject, consultMotherOnTicket } from './services/geminiService';
+import { Epic, Project, Ticket, TicketStatus } from './types';
 
 const COLUMNS = [
   { id: TicketStatus.TODO, title: 'PENDING' },
@@ -56,7 +58,7 @@ export default function App() {
   const [activeProjectId, setActiveProjectId] = useState<string>('');
   const [viewMode, setViewMode] = useState<ViewMode>('BOARD');
   const [loading, setLoading] = useState(true);
-  
+
   // AI Modal State
   const [modalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState('');
@@ -102,7 +104,7 @@ export default function App() {
         tickets: [] as Ticket[],
       }));
       setProjects(mappedProjects);
-      
+
       if (mappedProjects.length > 0 && !activeProjectId) {
         setActiveProjectId(mappedProjects[0].id);
       }
@@ -116,7 +118,7 @@ export default function App() {
   const loadProjectDetails = async (projectId: string) => {
     try {
       const { project, epics, tickets } = await projectsApi.getWithDetails(projectId);
-      
+
       const mappedEpics = epics.map(mapApiEpic);
       const mappedTickets = tickets.map(mapApiTicket);
       const mappedProject = mapApiProject(project, mappedEpics, mappedTickets);
@@ -144,7 +146,7 @@ export default function App() {
 
   const handleCreateEpic = async (name: string) => {
     if (!activeProjectId) return;
-    
+
     try {
       const color = EPIC_COLORS[activeProject?.epics.length || 0 % EPIC_COLORS.length];
       const newEpic = await epicsApi.create({ projectId: activeProjectId, name, color });
@@ -231,6 +233,8 @@ export default function App() {
           assigneeId: ticketToSave.assignee,
           startDate: ticketToSave.startDate,
           endDate: ticketToSave.endDate,
+          flagged: ticketToSave.flagged,
+          requiresHuman: ticketToSave.requiresHuman,
         });
       } else {
         // Update existing ticket
@@ -244,6 +248,8 @@ export default function App() {
           assigneeId: ticketToSave.assignee,
           startDate: ticketToSave.startDate,
           endDate: ticketToSave.endDate,
+          flagged: ticketToSave.flagged,
+          requiresHuman: ticketToSave.requiresHuman,
         });
       }
 
@@ -263,14 +269,14 @@ export default function App() {
 
     try {
       await ticketsApi.delete(ticketId);
-      
+
       setProjects(prev => prev.map(p => {
         if (p.id === activeProjectId) {
           return { ...p, tickets: p.tickets.filter(t => t.id !== ticketId) };
         }
         return p;
       }));
-      
+
       if (editingTicket?.id === ticketId) {
         setEditingTicket(null);
       }
@@ -284,7 +290,7 @@ export default function App() {
 
     try {
       const updated = await ticketsApi.updateStatus(ticket.id, TicketStatus.TODO);
-      
+
       setProjects(prev => prev.map(p => {
         if (p.id === activeProjectId) {
           return { ...p, tickets: p.tickets.map(t => t.id === ticket.id ? mapApiTicket(updated) : t) };
@@ -383,8 +389,14 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen w-screen bg-[#020617] text-cyan-50 overflow-hidden font-mono">
-      <Sidebar 
+    <div className="flex h-screen w-screen bg-[#020617] text-cyan-50 overflow-hidden font-mono relative">
+      <div className="scanlines"></div>
+
+      <Suspense fallback={null}>
+        <Background3D />
+      </Suspense>
+
+      <Sidebar
         projects={projects}
         activeProjectId={activeProjectId}
         onSelectProject={setActiveProjectId}
@@ -393,103 +405,133 @@ export default function App() {
         onCreateEpic={handleCreateEpic}
       />
 
-      <main className="flex-1 flex flex-col h-full overflow-hidden relative">
-        {/* Background Grid Effect */}
-        <div className="absolute inset-0 z-0 opacity-10 pointer-events-none" 
-             style={{ 
-               backgroundImage: 'linear-gradient(rgba(6,182,212,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(6,182,212,0.1) 1px, transparent 1px)', 
-               backgroundSize: '40px 40px' 
-             }}>
+      <main className="flex-1 flex flex-col h-full overflow-hidden relative z-10 crt-screen">
+        {/* Background Grid Effect - Subtle overlay */}
+        <div className="absolute inset-0 z-0 opacity-5 pointer-events-none"
+          style={{
+            backgroundImage: 'linear-gradient(rgba(6,182,212,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(6,182,212,0.1) 1px, transparent 1px)',
+            backgroundSize: '80px 80px'
+          }}>
         </div>
 
         {/* Header */}
-        <header className="p-6 border-b border-slate-800 flex justify-between items-center z-10 bg-[#020617]/80 backdrop-blur">
-          <div>
-            <div className="text-[10px] text-cyan-600 uppercase tracking-[0.3em] mb-1">Current Sector</div>
-            <h2 className="text-2xl font-display font-bold text-cyan-100 tracking-wide">{activeProject.name}</h2>
-          </div>
-          
+        <header className="p-6 border-b border-cyan-900/30 flex justify-between items-center z-10 bg-slate-950/20 backdrop-blur-md">
           <div className="flex items-center gap-4">
-              {/* View Toggle */}
-              <div className="bg-slate-900/50 p-1 rounded-md border border-slate-700 flex gap-1">
-                  <button 
-                    onClick={() => setViewMode('BOARD')}
-                    className={`px-3 py-2 rounded text-xs font-medium transition-colors flex items-center gap-2 ${viewMode === 'BOARD' ? 'bg-cyan-950/50 text-cyan-400 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
-                    title="Board View"
-                  >
-                      <Layout size={16} /> Board
-                  </button>
-                  <button 
-                    onClick={() => setViewMode('TIMELINE')}
-                    className={`px-3 py-2 rounded text-xs font-medium transition-colors flex items-center gap-2 ${viewMode === 'TIMELINE' ? 'bg-cyan-950/50 text-cyan-400 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
-                    title="Timeline View"
-                  >
-                      <Calendar size={16} /> Timeline
-                  </button>
-                  <button 
-                    onClick={() => setViewMode('BACKLOG')}
-                    className={`px-3 py-2 rounded text-xs font-medium transition-colors flex items-center gap-2 ${viewMode === 'BACKLOG' ? 'bg-orange-950/50 text-orange-400 shadow-sm border border-orange-500/30' : 'text-slate-500 hover:text-orange-300 hover:bg-orange-950/20'}`}
-                    title="Backlog View"
-                  >
-                      <List size={16} /> Backlog
-                  </button>
-              </div>
+            <div className="p-3 bg-cyan-950/30 border border-cyan-500/30 rounded-lg">
+              <Terminal className="text-cyan-400 animate-pulse" size={24} />
+            </div>
+            <div>
+              <div className="text-[10px] text-cyan-500 uppercase tracking-[0.4em] mb-1 font-bold">System Sector // Active</div>
+              <h2 className="text-2xl font-display font-bold text-cyan-100 tracking-wider text-glow">{activeProject.name}</h2>
+            </div>
+          </div>
 
-              <Button onClick={handleCreateTicket} variant="primary">
-                <Plus size={16} /> SPAWN ENTITY
-              </Button>
+          <div className="flex items-center gap-4">
+            {/* View Toggle */}
+            <div className="bg-slate-900/40 p-1 rounded-lg border border-cyan-900/30 flex gap-1 backdrop-blur">
+              <button
+                onClick={() => setViewMode('BOARD')}
+                className={`px-4 py-2 rounded-md text-[10px] uppercase tracking-widest font-bold transition-all flex items-center gap-2 ${viewMode === 'BOARD' ? 'bg-cyan-500/20 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.2)] border border-cyan-500/30' : 'text-slate-500 hover:text-cyan-400 hover:bg-cyan-950/20'}`}
+                title="Board View"
+              >
+                <Layout size={14} /> Board
+              </button>
+              <button
+                onClick={() => setViewMode('TIMELINE')}
+                className={`px-4 py-2 rounded-md text-[10px] uppercase tracking-widest font-bold transition-all flex items-center gap-2 ${viewMode === 'TIMELINE' ? 'bg-cyan-500/20 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.2)] border border-cyan-500/30' : 'text-slate-500 hover:text-cyan-400 hover:bg-cyan-950/20'}`}
+                title="Timeline View"
+              >
+                <Calendar size={14} /> Timeline
+              </button>
+              <button
+                onClick={() => setViewMode('BACKLOG')}
+                className={`px-4 py-2 rounded-md text-[10px] uppercase tracking-widest font-bold transition-all flex items-center gap-2 ${viewMode === 'BACKLOG' ? 'bg-orange-500/20 text-orange-400 shadow-[0_0_15px_rgba(245,158,11,0.2)] border border-orange-500/30' : 'text-slate-500 hover:text-orange-400 hover:bg-orange-950/20'}`}
+                title="Backlog View"
+              >
+                <List size={14} /> Backlog
+              </button>
+            </div>
+
+            <Button onClick={handleCreateTicket} className="mother-btn px-6 font-bold py-2 rounded-md">
+              <Plus size={16} /> SPAWN ENTITY
+            </Button>
           </div>
         </header>
 
-        {/* Content Area */}
-        {viewMode === 'BOARD' && (
-             <div className="flex-1 overflow-x-auto overflow-y-hidden p-6 z-10">
+        <div className="flex-1 overflow-hidden relative">
+          <AnimatePresence mode="wait">
+            {viewMode === 'BOARD' && (
+              <motion.div
+                key="board"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="absolute inset-0 overflow-x-auto overflow-y-hidden p-6"
+              >
                 <div className="flex h-full gap-6 min-w-max">
-                    {COLUMNS.map(col => (
-                    <Column 
-                        key={col.id}
-                        status={col.id}
-                        title={col.title}
-                        epics={activeProject.epics}
-                        tickets={activeProject.tickets.filter(t => t.status === col.id)}
-                        onDrop={handleDrop}
-                        onDragOver={handleDragOver}
-                        onDragStart={handleDragStart}
-                        onTicketClick={setEditingTicket}
+                  {COLUMNS.map(col => (
+                    <Column
+                      key={col.id}
+                      status={col.id}
+                      title={col.title}
+                      epics={activeProject.epics}
+                      tickets={activeProject.tickets.filter(t => t.status === col.id)}
+                      onDrop={handleDrop}
+                      onDragOver={handleDragOver}
+                      onDragStart={handleDragStart}
+                      onTicketClick={setEditingTicket}
                     />
-                    ))}
+                  ))}
                 </div>
-            </div>
-        )}
-        
-        {viewMode === 'TIMELINE' && (
-            <TimelineView 
-                tickets={activeProject.tickets.filter(t => t.status !== TicketStatus.BACKLOG)}
-                epics={activeProject.epics}
-                onTicketClick={setEditingTicket}
-            />
-        )}
+              </motion.div>
+            )}
 
-        {viewMode === 'BACKLOG' && (
-            <BacklogView 
-                tickets={activeProject.tickets.filter(t => t.status === TicketStatus.BACKLOG)}
-                epics={activeProject.epics}
-                onTicketClick={setEditingTicket}
-                onMoveToBoard={handleMoveToBoard}
-            />
-        )}
-       
+            {viewMode === 'TIMELINE' && (
+              <motion.div
+                key="timeline"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.05 }}
+                className="absolute inset-0"
+              >
+                <TimelineView
+                  tickets={activeProject.tickets.filter(t => t.status !== TicketStatus.BACKLOG)}
+                  epics={activeProject.epics}
+                  onTicketClick={setEditingTicket}
+                />
+              </motion.div>
+            )}
+
+            {viewMode === 'BACKLOG' && (
+              <motion.div
+                key="backlog"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="absolute inset-0"
+              >
+                <BacklogView
+                  tickets={activeProject.tickets.filter(t => t.status === TicketStatus.BACKLOG)}
+                  epics={activeProject.epics}
+                  onTicketClick={setEditingTicket}
+                  onMoveToBoard={handleMoveToBoard}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
       </main>
 
-      <MotherModal 
-        isOpen={modalOpen} 
-        onClose={() => setModalOpen(false)} 
+      <MotherModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
         content={modalContent}
         title={modalTitle}
         isLoading={isAiLoading}
       />
 
-      <TicketDetailModal 
+      <TicketDetailModal
         ticket={editingTicket}
         epics={activeProject.epics}
         isOpen={!!editingTicket}

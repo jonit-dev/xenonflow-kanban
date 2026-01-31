@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Ticket, TicketStatus, Epic } from '../types';
-import { MoreVertical, Trash2, BrainCircuit, Hash, Calendar, Flag, User } from 'lucide-react';
+import { Activity, BrainCircuit, Calendar, Hash } from 'lucide-react';
+import React from 'react';
+import { Epic, Ticket, TicketStatus } from '../types';
 
 // --- Ticket Component ---
 
@@ -12,19 +12,18 @@ interface TicketCardProps {
 }
 
 export const TicketCard: React.FC<TicketCardProps> = ({ ticket, epic, onDragStart, onClick }) => {
-  
+
   const priorityColor = {
-    low: 'border-l-slate-500',
-    medium: 'border-l-cyan-500',
-    high: 'border-l-amber-500',
-    critical: 'border-l-rose-600 shadow-[0_0_10px_rgba(225,29,72,0.2)]'
+    low: 'border-l-slate-700',
+    medium: 'border-l-cyan-600',
+    high: 'border-l-orange-500',
+    critical: 'border-l-rose-600 shadow-[0_0_15px_rgba(225,29,72,0.3)]'
   };
 
-  // Format date slightly
   const formatDate = (dateStr?: string) => {
-      if (!dateStr) return null;
-      const d = new Date(dateStr);
-      return `${d.getMonth() + 1}/${d.getDate()}`;
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    return `${d.getMonth() + 1}/${d.getDate()}`;
   }
 
   return (
@@ -33,71 +32,66 @@ export const TicketCard: React.FC<TicketCardProps> = ({ ticket, epic, onDragStar
       onDragStart={(e) => onDragStart(e, ticket.id)}
       onClick={() => onClick(ticket)}
       className={`
-        group relative p-4 mb-3 bg-slate-900/80 backdrop-blur-sm 
-        border border-slate-700/50 ${priorityColor[ticket.priority]} border-l-4 
-        hover:border-cyan-500/50 hover:bg-slate-800/60 
-        transition-all cursor-move alien-glow-hover select-none
+        group relative p-4 mb-3 bg-slate-900/40 backdrop-blur-md 
+        border border-cyan-900/20 ${priorityColor[ticket.priority]} border-l-4 
+        hover:border-cyan-500/40 hover:bg-slate-800/40 
+        transition-all cursor-move select-none rounded-r-lg
       `}
     >
       <div className="flex justify-between items-start mb-2">
-        <div className="flex items-center gap-1.5">
-          {ticket.flagged && (
-            <Flag size={12} className="text-orange-500 shrink-0" title="Flagged" />
-          )}
-          {ticket.requiresHuman && (
-            <User size={12} className="text-yellow-500 shrink-0" title="Requires human intervention" />
-          )}
-          <h4 className="text-cyan-100 font-medium text-sm leading-tight pr-2">{ticket.title}</h4>
+        <div className="flex items-center gap-2">
+          <h4 className="text-cyan-100 font-bold text-xs uppercase tracking-widest leading-tight pr-2 group-hover:text-cyan-400 transition-colors">
+            {ticket.title}
+          </h4>
         </div>
         {ticket.aiInsights && (
-          <BrainCircuit size={14} className="text-purple-500 animate-pulse shrink-0" title="Mother has spoken" />
+          <BrainCircuit size={14} className="text-cyan-400 animate-pulse shrink-0" />
         )}
       </div>
 
-      <p className="text-slate-400 text-xs mb-3 line-clamp-2">{ticket.description}</p>
+      <p className="text-slate-500 text-[10px] mb-3 line-clamp-2 font-medium tracking-wide leading-relaxed uppercase">
+        {ticket.description || "NO DATA RECORDED"}
+      </p>
 
-      {/* Date Row if exists */}
       {(ticket.startDate || ticket.endDate) && (
-          <div className="flex items-center gap-2 text-[10px] text-slate-500 mb-2 font-mono">
-              <Calendar size={10} />
-              <span>{formatDate(ticket.startDate) || '...'}</span>
-              <span>→</span>
-              <span>{formatDate(ticket.endDate) || '...'}</span>
-          </div>
+        <div className="flex items-center gap-2 text-[9px] text-cyan-800 mb-2 font-black tracking-tighter">
+          <Calendar size={10} />
+          <span>{formatDate(ticket.startDate) || '...'}</span>
+          <span>»</span>
+          <span>{formatDate(ticket.endDate) || '...'}</span>
+        </div>
       )}
 
-      <div className="flex items-center justify-between mt-2">
+      <div className="flex items-center justify-between mt-3">
         <div className="flex items-center gap-2">
-            {/* Story Points */}
-            {ticket.storyPoints > 0 && (
-                <div className="flex items-center text-[10px] text-slate-500 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">
-                    <Hash size={10} className="mr-1"/>
-                    {ticket.storyPoints}
-                </div>
-            )}
-            {/* Epic Badge */}
-            {epic && (
-                <div 
-                    className="text-[10px] px-1.5 py-0.5 rounded border"
-                    style={{ 
-                        borderColor: epic.color, 
-                        color: epic.color,
-                        backgroundColor: `${epic.color}10` // 10% opacity
-                    }}
-                >
-                    {epic.name}
-                </div>
-            )}
+          {ticket.storyPoints > 0 && (
+            <div className="flex items-center text-[9px] font-black text-cyan-600 bg-black/40 px-2 py-0.5 rounded border border-cyan-900/30">
+              <Hash size={9} className="mr-0.5" />
+              {ticket.storyPoints}
+            </div>
+          )}
+          {epic && (
+            <div
+              className="text-[9px] font-black px-2 py-0.5 rounded border uppercase tracking-widest"
+              style={{
+                borderColor: `${epic.color}40`,
+                color: epic.color,
+                backgroundColor: `${epic.color}10`
+              }}
+            >
+              {epic.name}
+            </div>
+          )}
         </div>
 
-        <span className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded ${ticket.priority === 'critical' ? 'bg-rose-950 text-rose-400' : 'bg-slate-800 text-slate-500'}`}>
-          {ticket.priority.substring(0,3)}
+        <span className={`text-[8px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded ${ticket.priority === 'critical' ? 'bg-rose-950/50 text-rose-500 border border-rose-500/30' : 'bg-slate-950/50 text-slate-600 border border-slate-800/50'}`}>
+          {ticket.priority.substring(0, 4)}
         </span>
       </div>
-      
-      {/* Hover decoration */}
-      <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-transparent group-hover:border-cyan-500/50 transition-colors"></div>
-      <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-transparent group-hover:border-cyan-500/50 transition-colors"></div>
+
+      {/* Corner decorations */}
+      <div className="absolute top-0 right-0 w-1.5 h-1.5 border-t border-r border-cyan-500/30 transition-all group-hover:w-3 group-hover:h-3"></div>
+      <div className="absolute bottom-0 left-0 w-1.5 h-1.5 border-b border-l border-cyan-500/30 transition-all group-hover:w-3 group-hover:h-3"></div>
     </div>
   );
 };
@@ -115,55 +109,55 @@ interface ColumnProps {
   onTicketClick: (ticket: Ticket) => void;
 }
 
-export const Column: React.FC<ColumnProps> = ({ 
-  status, 
-  title, 
-  tickets, 
+export const Column: React.FC<ColumnProps> = ({
+  status,
+  title,
+  tickets,
   epics,
-  onDrop, 
+  onDrop,
   onDragOver,
   onDragStart,
   onTicketClick
 }) => {
   return (
-    <div 
-      className="flex flex-col h-full min-w-[300px] w-full bg-slate-900/20 border border-slate-800/50 rounded-sm"
+    <div
+      className="flex flex-col h-full min-w-[320px] w-full bg-slate-950/20 backdrop-blur-sm border border-cyan-900/20 rounded-lg overflow-hidden"
       onDrop={(e) => onDrop(e, status)}
       onDragOver={onDragOver}
     >
-      <div className="p-4 border-b border-slate-800/50 flex justify-between items-center bg-slate-950/50">
-        <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${
-            status === TicketStatus.TODO ? 'bg-slate-500' :
-            status === TicketStatus.IN_PROGRESS ? 'bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.8)]' :
-            status === TicketStatus.REVIEW ? 'bg-purple-500' :
-            'bg-emerald-500'
-          }`}></div>
-          <h3 className="text-sm font-bold tracking-widest text-slate-300">{title}</h3>
+      <div className="p-4 border-b border-cyan-900/30 flex justify-between items-center bg-cyan-950/10">
+        <div className="flex items-center gap-3">
+          <div className={`w-2 h-2 rounded-sm rotate-45 ${status === TicketStatus.TODO ? 'bg-slate-600' :
+              status === TicketStatus.IN_PROGRESS ? 'bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,1)]' :
+                status === TicketStatus.REVIEW ? 'bg-purple-500' :
+                  'bg-emerald-500'
+            }`}></div>
+          <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-cyan-200 text-glow">{title}</h3>
         </div>
-        <div className="flex items-center gap-2">
-             <span className="text-[10px] text-slate-600 font-mono flex items-center" title="Total SP">
-                <Hash size={10} className="mr-0.5"/>
-                {tickets.reduce((acc, t) => acc + (t.storyPoints || 0), 0)}
-             </span>
-             <span className="text-xs text-slate-600 font-mono">[{tickets.length}]</span>
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] text-cyan-800 font-black font-mono flex items-center">
+            <Hash size={10} className="mr-0.5" />
+            {tickets.reduce((acc, t) => acc + (t.storyPoints || 0), 0)}
+          </span>
+          <span className="text-[10px] text-cyan-700 font-black font-mono">[{tickets.length}]</span>
         </div>
       </div>
 
       <div className="flex-1 p-3 overflow-y-auto min-h-[150px] transition-colors duration-200" id={`col-${status}`}>
         {tickets.map(ticket => (
-          <TicketCard 
-            key={ticket.id} 
-            ticket={ticket} 
+          <TicketCard
+            key={ticket.id}
+            ticket={ticket}
             epic={epics.find(e => e.id === ticket.epicId)}
             onDragStart={onDragStart}
             onClick={onTicketClick}
           />
         ))}
         {tickets.length === 0 && (
-            <div className="h-24 flex items-center justify-center border border-dashed border-slate-800 text-slate-700 text-xs">
-                AWAITING UNITS
-            </div>
+          <div className="h-24 flex flex-col items-center justify-center border border-dashed border-cyan-900/20 text-cyan-900 text-[10px] font-black tracking-widest uppercase">
+            <Activity size={16} className="mb-2 opacity-30 animate-pulse" />
+            Sector Idle
+          </div>
         )}
       </div>
     </div>

@@ -44,9 +44,9 @@ export class TicketsRepository extends BaseRepository {
     this.database().prepare(`
       INSERT INTO tickets (
         id, project_id, epic_id, assignee_id, title, description, status, priority,
-        story_points, start_date, end_date, ai_insights, position, created_at, updated_at
+        story_points, start_date, end_date, ai_insights, position, flagged, requires_human, created_at, updated_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id,
       dto.project_id,
@@ -61,6 +61,8 @@ export class TicketsRepository extends BaseRepository {
       dto.end_date || null,
       null,
       position,
+      dto.flagged ? 1 : 0,
+      dto.requiresHuman ? 1 : 0,
       now,
       now
     );
@@ -114,6 +116,14 @@ export class TicketsRepository extends BaseRepository {
     if (dto.ai_insights !== undefined) {
       updates.push('ai_insights = ?');
       values.push(dto.ai_insights);
+    }
+    if (dto.flagged !== undefined) {
+      updates.push('flagged = ?');
+      values.push(dto.flagged ? 1 : 0);
+    }
+    if (dto.requiresHuman !== undefined) {
+      updates.push('requires_human = ?');
+      values.push(dto.requiresHuman ? 1 : 0);
     }
 
     if (updates.length === 0) return existing;

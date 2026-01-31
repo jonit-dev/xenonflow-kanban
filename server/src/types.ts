@@ -94,6 +94,8 @@ export interface CreateTicketDto {
   assignee_id?: string;
   start_date?: string;
   end_date?: string;
+  flagged?: boolean;
+  requiresHuman?: boolean;
 }
 
 export interface UpdateTicketDto {
@@ -107,6 +109,8 @@ export interface UpdateTicketDto {
   start_date?: string;
   end_date?: string;
   ai_insights?: string;
+  flagged?: boolean;
+  requiresHuman?: boolean;
 }
 
 export interface UpdateTicketStatusDto {

@@ -1,1 +1,157 @@
-/* Empty CSS file - Tailwind is loaded via CDN in index.html */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --mother-bg: #020617;
+  --mother-cyan: #06b6d4;
+  --mother-cyan-glow: rgba(6, 182, 212, 0.4);
+  --mother-green: #10b981;
+  --mother-orange: #f59e0b;
+  --mother-red: #ef4444;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--mother-bg);
+  color: #cffafe;
+  overflow: hidden;
+  font-family: 'Share Tech Mono', monospace;
+}
+
+/* scanline effect */
+.scanlines {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%,
+    rgba(0, 0, 0, 0.25) 50%
+  ),
+  linear-gradient(
+    90deg,
+    rgba(255, 0, 0, 0.06),
+    rgba(0, 255, 0, 0.02),
+    rgba(0, 0, 255, 0.06)
+  );
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none;
+  z-index: 50;
+  opacity: 0.15;
+}
+
+/* CRT flicker */
+@keyframes flicker {
+  0% { opacity: 0.97; }
+  5% { opacity: 0.95; }
+  10% { opacity: 0.9; }
+  15% { opacity: 0.95; }
+  20% { opacity: 0.98; }
+  25% { opacity: 0.95; }
+  30% { opacity: 0.9; }
+  35% { opacity: 0.95; }
+  40% { opacity: 0.98; }
+  45% { opacity: 0.95; }
+  50% { opacity: 0.9; }
+  55% { opacity: 0.95; }
+  60% { opacity: 0.98; }
+  65% { opacity: 0.95; }
+  70% { opacity: 0.9; }
+  75% { opacity: 0.95; }
+  80% { opacity: 0.98; }
+  85% { opacity: 0.95; }
+  90% { opacity: 0.9; }
+  95% { opacity: 0.95; }
+  100% { opacity: 0.98; }
+}
+
+.crt-screen {
+  animation: flicker 0.15s infinite;
+}
+
+/* Glassmorphism / Terminal Panels */
+.terminal-panel {
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(6, 182, 212, 0.05);
+}
+
+.terminal-header {
+  background: rgba(6, 182, 212, 0.1);
+  border-bottom: 1px solid rgba(6, 182, 212, 0.3);
+}
+
+/* Custom button styles */
+.mother-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(6, 182, 212, 0.5);
+  background: rgba(6, 182, 212, 0.1);
+  color: #cffafe;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.mother-btn:hover {
+  background: rgba(6, 182, 212, 0.2);
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
+  border-color: #06b6d4;
+}
+
+.mother-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  transition: 0.5s;
+}
+
+.mother-btn:hover::after {
+  left: 100%;
+}
+
+@layer utilities {
+  .text-glow {
+    text-shadow: 0 0 8px rgba(6, 182, 212, 0.6);
+  }
+  .text-glow-green {
+    text-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+  }
+  .animate-pulse-slow {
+    animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Scrollbar refinement */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #020617;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(6, 182, 212, 0.3);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(6, 182, 212, 0.6);
+}

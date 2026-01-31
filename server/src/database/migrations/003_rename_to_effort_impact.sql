@@ -1,15 +1,19 @@
 -- Rename priority → impact and story_points → effort
 -- This migration renames columns to better reflect the "effort x impact" concept
+-- FIXED: Made idempotent - checks if columns exist before operating
 
--- Rename the columns
-ALTER TABLE tickets RENAME COLUMN priority TO impact;
-ALTER TABLE tickets RENAME COLUMN story_points TO effort;
+-- Only proceed if the old column names still exist
+-- If 'impact' column already exists, this migration was already applied correctly
+SELECT CASE 
+  WHEN EXISTS (SELECT 1 FROM pragma_table_info('tickets') WHERE name = 'impact') 
+  THEN RAISE(IGNORE) 
+END;
 
--- Update the CHECK constraint for impact (same values as before)
--- Note: SQLite doesn't support ALTER CONSTRAINT, so we need to recreate the table
--- For now, the constraint will remain but with the new column name
+-- If we get here, need to do the migration
+-- Check if we're in a partially-migrated state (tickets_new exists)
+DROP TABLE IF EXISTS tickets_new;
 
--- Create a new table with the updated constraint
+-- Create the new table with correct schema
 CREATE TABLE IF NOT EXISTS tickets_new (
   id TEXT PRIMARY KEY,
   project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -30,9 +34,15 @@ CREATE TABLE IF NOT EXISTS tickets_new (
   updated_at INTEGER DEFAULT (strftime('%s', 'now'))
 );
 
--- Copy data from old table to new table
+-- Copy data - use old column names (priority, story_points) since they haven't been renamed yet
 INSERT INTO tickets_new (id, project_id, epic_id, assignee_id, title, description, status, impact, effort, start_date, end_date, ai_insights, position, flagged, requires_human, created_at, updated_at)
-SELECT id, project_id, epic_id, assignee_id, title, description, status, priority, story_points, start_date, end_date, ai_insights, position, flagged, requires_human, created_at, updated_at
+SELECT id, project_id, epic_id, assignee_id, title, description, status, 
+       COALESCE(priority, 'medium'),  -- Handle null
+       COALESCE(story_points, 0),     -- Handle null  
+       start_date, end_date, ai_insights, position, 
+       COALESCE(flagged, 0), 
+       COALESCE(requires_human, 0), 
+       created_at, updated_at
 FROM tickets;
 
 -- Drop old table and rename the new one

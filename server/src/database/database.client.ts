@@ -10,6 +10,7 @@ const DB_PATH = path.join(DB_DIR, 'xenonflow.db');
 @Service()
 export class DatabaseClient {
   private db: Database.Database;
+  private checkpointInterval: NodeJS.Timeout | null = null;
 
   constructor() {
     if (!fs.existsSync(DB_DIR)) {
@@ -20,6 +21,16 @@ export class DatabaseClient {
     this.db = new Database(DB_PATH);
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('foreign_keys = ON');
+    
+    // Periodic WAL checkpoint every 5 minutes to prevent data loss
+    this.checkpointInterval = setInterval(() => {
+      try {
+        this.db.pragma('wal_checkpoint(PASSIVE)');
+        console.log('[DB] Periodic WAL checkpoint complete');
+      } catch (err) {
+        console.error('[DB] Periodic checkpoint failed:', err);
+      }
+    }, 5 * 60 * 1000);
   }
 
   getDatabase(): Database.Database {
@@ -27,7 +38,21 @@ export class DatabaseClient {
   }
 
   close(): void {
+    // Clear the checkpoint interval
+    if (this.checkpointInterval) {
+      clearInterval(this.checkpointInterval);
+      this.checkpointInterval = null;
+    }
+    
+    // Checkpoint WAL to ensure all data is written to main DB file
+    try {
+      this.db.pragma('wal_checkpoint(TRUNCATE)');
+      console.log('[DB] WAL checkpoint complete before close');
+    } catch (err) {
+      console.error('[DB] WAL checkpoint failed:', err);
+    }
     this.db.close();
+    console.log('[DB] Database closed');
   }
 
   runMigrations(): void {

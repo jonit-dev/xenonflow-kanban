@@ -30,6 +30,7 @@ import {
   useSetMotherModalLoading,
   useSetViewMode,
   useSetDraggedTicketId,
+  useDraggedTicketId,
   useIsTicketModalOpen,
   useTicketModalId,
   useDraftTicket,
@@ -56,6 +57,7 @@ export default function App() {
   // UI actions
   const setViewMode = useSetViewMode();
   const setDraggedTicketId = useSetDraggedTicketId();
+  const draggedTicketId = useDraggedTicketId();
   const setActiveProject = useSetActiveProject();
 
   // Modal state
@@ -160,10 +162,9 @@ export default function App() {
 
   const handleDrop = async (e: React.DragEvent, status: TicketStatus) => {
     e.preventDefault();
-    const draggedId = draftTicket?.id || ticketId;
-    if (!draggedId) return;
+    if (!draggedTicketId) return;
 
-    await updateTicketStatus(draggedId, status);
+    await updateTicketStatus(draggedTicketId, status);
     setDraggedTicketId(null);
   };
 

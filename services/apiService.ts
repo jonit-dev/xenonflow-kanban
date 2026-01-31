@@ -1,5 +1,11 @@
 const API_BASE = 'http://localhost:3333/api';
 
+// Strip emojis from text - we're a fucking alien kanban board
+const stripEmojis = (str: string | undefined): string | undefined => {
+  if (!str) return str;
+  return str.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').trim();
+};
+
 // Types matching backend response
 export interface ApiProject {
   id: string;
@@ -79,9 +85,15 @@ async function api<T>(endpoint: string, options?: RequestInit): Promise<T> {
 
 // Projects
 export const projectsApi = {
-  list: () => api<ApiProject[]>('/projects'),
+  list: async (): Promise<ApiProject[]> => {
+    const projects = await api<ApiProject[]>('/projects');
+    return projects.map(p => ({ ...p, description: stripEmojis(p.description) }));
+  },
 
-  get: (id: string) => api<ApiProject>(`/projects/${id}`),
+  get: async (id: string): Promise<ApiProject> => {
+    const project = await api<ApiProject>(`/projects/${id}`);
+    return { ...project, description: stripEmojis(project.description) };
+  },
 
   getWithDetails: async (
     id: string,
@@ -91,24 +103,28 @@ export const projectsApi = {
     tickets: ApiTicket[];
     columns: ApiColumn[];
   }> => {
-    return api<{
+    const result = await api<{
       project: ApiProject;
       epics: ApiEpic[];
       tickets: ApiTicket[];
       columns: ApiColumn[];
     }>(`/projects/${id}/details`);
+    return {
+      ...result,
+      project: { ...result.project, description: stripEmojis(result.project.description) },
+    };
   },
 
   create: (data: { name: string; description?: string }) =>
     api<ApiProject>('/projects', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, description: stripEmojis(data.description) }),
     }),
 
   update: (id: string, data: { name?: string; description?: string }) =>
     api<ApiProject>(`/projects/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, description: stripEmojis(data.description) }),
     }),
 
   delete: (id: string) =>

@@ -2,6 +2,45 @@ import { Activity, BrainCircuit, Calendar, Flag, GitPullRequest, Hash, MoreVerti
 import React from 'react';
 import { Epic, Ticket, TicketStatus } from '../types';
 
+// Impact weights for priority sorting
+const IMPACT_WEIGHTS: Record<string, number> = {
+  critical: 4,
+  high: 3,
+  medium: 2,
+  low: 1
+};
+
+const getImpactWeight = (impact: string): number => IMPACT_WEIGHTS[impact] || 1;
+
+// Sort tickets by priority (impact), then by start/end date
+const sortTicketsByPriority = (tickets: Ticket[]): Ticket[] => {
+  return [...tickets].sort((a, b) => {
+    const aImpact = getImpactWeight(a.impact);
+    const bImpact = getImpactWeight(b.impact);
+
+    // Sort by impact (higher first)
+    if (aImpact !== bImpact) return bImpact - aImpact;
+
+    // Same impact - sort by start date
+    if (a.startDate && b.startDate) {
+      const startCompare = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+      if (startCompare !== 0) return startCompare;
+    }
+    if (a.startDate) return -1;
+    if (b.startDate) return 1;
+
+    // Same impact, no start date - sort by end date
+    if (a.endDate && b.endDate) {
+      return new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
+    }
+    if (a.endDate) return -1;
+    if (b.endDate) return 1;
+
+    // Same impact, no dates - maintain position order
+    return (a.position || 0) - (b.position || 0);
+  });
+};
+
 // --- Ticket Component ---
 
 interface TicketCardProps {
@@ -244,7 +283,7 @@ export const Column: React.FC<ColumnProps> = ({
       </div>
 
       <div className="flex-1 p-3 overflow-y-auto min-h-[150px] transition-colors duration-200" id={`col-${status}`}>
-        {tickets.map(ticket => (
+        {sortTicketsByPriority(tickets).map(ticket => (
           <TicketCard
             key={ticket.id}
             ticket={ticket}

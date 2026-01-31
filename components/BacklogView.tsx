@@ -10,8 +10,7 @@ interface BacklogViewProps {
     onMoveToBoard: (ticket: Ticket) => void;
 }
 
-// WSJF: Weighted Shortest Job First - sort by (impact / effort) descending
-// Impact weights: critical=4, high=3, medium=2, low=1
+// Impact weights for priority sorting
 const IMPACT_WEIGHTS: Record<string, number> = {
     critical: 4,
     high: 3,
@@ -21,20 +20,32 @@ const IMPACT_WEIGHTS: Record<string, number> = {
 
 const getImpactWeight = (impact: string): number => IMPACT_WEIGHTS[impact] || 1;
 
-const sortTicketsByWSJF = (tickets: Ticket[]): Ticket[] => {
+// Sort tickets by priority (impact), then by start/end date
+const sortTicketsByPriority = (tickets: Ticket[]): Ticket[] => {
     return [...tickets].sort((a, b) => {
         const aImpact = getImpactWeight(a.impact);
         const bImpact = getImpactWeight(b.impact);
-        const aEffort = a.effort || 1;
-        const bEffort = b.effort || 1;
 
-        // WSJF score: impact / effort (higher is better = quick wins)
-        const aScore = aImpact / aEffort;
-        const bScore = bImpact / bEffort;
-
-        if (aScore !== bScore) return bScore - aScore;
+        // Sort by impact (higher first)
         if (aImpact !== bImpact) return bImpact - aImpact;
-        return aEffort - bEffort;
+
+        // Same impact - sort by start date
+        if (a.startDate && b.startDate) {
+            const startCompare = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+            if (startCompare !== 0) return startCompare;
+        }
+        if (a.startDate) return -1;
+        if (b.startDate) return 1;
+
+        // Same impact, no start date - sort by end date
+        if (a.endDate && b.endDate) {
+            return new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
+        }
+        if (a.endDate) return -1;
+        if (b.endDate) return 1;
+
+        // Same impact, no dates - maintain position order
+        return (a.position || 0) - (b.position || 0);
     });
 };
 
@@ -71,7 +82,7 @@ export const BacklogView: React.FC<BacklogViewProps> = ({ tickets, epics, onTick
         for (const epic of sortedEpics) {
             const epicTickets = tickets.filter(t => t.epicId === epic.id);
             if (epicTickets.length > 0) {
-                const sortedTickets = sortTicketsByWSJF(epicTickets);
+                const sortedTickets = sortTicketsByPriority(epicTickets);
                 groups.push({
                     epic,
                     tickets: sortedTickets,
@@ -83,7 +94,7 @@ export const BacklogView: React.FC<BacklogViewProps> = ({ tickets, epics, onTick
         // Add unassigned group
         const unassignedTickets = tickets.filter(t => !t.epicId);
         if (unassignedTickets.length > 0) {
-            const sortedTickets = sortTicketsByWSJF(unassignedTickets);
+            const sortedTickets = sortTicketsByPriority(unassignedTickets);
             groups.push({
                 epic: null,
                 tickets: sortedTickets,

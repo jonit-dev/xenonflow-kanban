@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
-import { Activity, Archive, Database, Hash, Play } from 'lucide-react';
-import React from 'react';
+import { Activity, Archive, Database, Flag, Hash, Play, User } from 'lucide-react';
+import React, { useMemo } from 'react';
 import { Epic, Ticket } from '../types';
 
 interface BacklogViewProps {
@@ -10,13 +10,58 @@ interface BacklogViewProps {
     onMoveToBoard: (ticket: Ticket) => void;
 }
 
+// WSJF: Weighted Shortest Job First - sort by (impact / effort) descending
+// Impact weights: critical=4, high=3, medium=2, low=1
+const IMPACT_WEIGHTS: Record<string, number> = {
+    critical: 4,
+    high: 3,
+    medium: 2,
+    low: 1
+};
+
+const getImpactWeight = (impact: string): number => IMPACT_WEIGHTS[impact] || 1;
+
+const sortTicketsByWSJF = (tickets: Ticket[]): Ticket[] => {
+    return [...tickets].sort((a, b) => {
+        const aImpact = getImpactWeight(a.impact);
+        const bImpact = getImpactWeight(b.impact);
+        const aEffort = a.effort || 1;
+        const bEffort = b.effort || 1;
+
+        // WSJF score: impact / effort (higher is better = quick wins)
+        const aScore = aImpact / aEffort;
+        const bScore = bImpact / bEffort;
+
+        if (aScore !== bScore) return bScore - aScore;
+        if (aImpact !== bImpact) return bImpact - aImpact;
+        return aEffort - bEffort;
+    });
+};
+
 export const BacklogView: React.FC<BacklogViewProps> = ({ tickets, epics, onTicketClick, onMoveToBoard }) => {
 
-    const priorityColor = {
-        low: 'text-slate-500',
-        medium: 'text-cyan-600',
-        high: 'text-orange-500',
+    // Sort tickets by WSJF (Impact/Effort)
+    const sortedTickets = useMemo(() => sortTicketsByWSJF(tickets), [tickets]);
+
+    const impactColor = {
+        low: 'text-emerald-500',
+        medium: 'text-cyan-500',
+        high: 'text-amber-500',
         critical: 'text-rose-500 font-black text-glow'
+    };
+
+    const getFlagClass = (ticket: Ticket) => {
+        if (ticket.flagged && ticket.requiresHuman) return 'bg-gradient-to-r from-orange-500/10 to-yellow-500/10 border-orange-500/40';
+        if (ticket.flagged) return 'bg-orange-500/10 border-orange-500/40';
+        if (ticket.requiresHuman) return 'bg-yellow-500/10 border-yellow-500/40';
+        return 'border-cyan-900/10';
+    };
+
+    // Calculate WSJF score for display
+    const getWSJFScore = (ticket: Ticket): number => {
+        const impact = getImpactWeight(ticket.impact);
+        const effort = ticket.effort || 1;
+        return Math.round((impact / effort) * 100) / 100;
     };
 
     return (
@@ -37,7 +82,7 @@ export const BacklogView: React.FC<BacklogViewProps> = ({ tickets, epics, onTick
                     </div>
                 </div>
                 <div className="text-[10px] text-cyan-900 font-black uppercase tracking-[0.2em] flex items-center gap-2">
-                    <Activity size={12} /> Total Biomass Index: {tickets.reduce((acc, t) => acc + (t.storyPoints || 0), 0)} SP
+                    <Activity size={12} /> Total Biomass Index: {tickets.reduce((acc, t) => acc + (t.effort || 0), 0)} SP
                 </div>
             </div>
 
@@ -56,31 +101,39 @@ export const BacklogView: React.FC<BacklogViewProps> = ({ tickets, epics, onTick
                     <div className="space-y-2">
                         {/* Header Row */}
                         <div className="grid grid-cols-12 gap-6 px-6 py-4 text-[10px] font-black text-cyan-800 uppercase tracking-[0.2em] border-b border-cyan-900/20">
-                            <div className="col-span-5">Unit Designation</div>
+                            <div className="col-span-4">Unit Designation</div>
                             <div className="col-span-2">Security Protocol</div>
-                            <div className="col-span-2">Hazard Level</div>
-                            <div className="col-span-1 text-center">Complexity</div>
-                            <div className="col-span-2 text-right">System Action</div>
+                            <div className="col-span-2">Impact</div>
+                            <div className="col-span-1 text-center">Effort</div>
+                            <div className="col-span-1 text-center">WSJF</div>
+                            <div className="col-span-2 text-right">Action</div>
                         </div>
 
                         {/* Rows */}
-                        {tickets.map((ticket, index) => {
+                        {sortedTickets.map((ticket, index) => {
                             const epic = epics.find(e => e.id === ticket.epicId);
+                            const wsjfScore = getWSJFScore(ticket);
                             return (
                                 <motion.div
                                     key={ticket.id}
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: index * 0.05 }}
-                                    className="group grid grid-cols-12 gap-6 px-6 py-4 items-center bg-slate-900/20 backdrop-blur-md border border-cyan-900/10 hover:bg-cyan-950/10 hover:border-cyan-500/30 transition-all rounded-md cursor-pointer relative overflow-hidden"
+                                    className={`group grid grid-cols-12 gap-6 px-6 py-4 items-center bg-slate-900/20 backdrop-blur-md ${getFlagClass(ticket)} hover:bg-cyan-950/10 hover:border-cyan-500/30 transition-all rounded-md cursor-pointer relative overflow-hidden`}
                                     onClick={() => onTicketClick(ticket)}
                                 >
-                                    <div className="col-span-5 relative z-10">
-                                        <div className="font-black text-cyan-100 uppercase tracking-widest group-hover:text-cyan-400 transition-colors truncate">
-                                            {ticket.title}
+                                    <div className="col-span-4 relative z-10">
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                {ticket.flagged && <Flag size={11} className="text-orange-500" />}
+                                                {ticket.requiresHuman && <User size={11} className="text-yellow-500" />}
+                                            </div>
+                                            <div className="font-black text-cyan-100 uppercase tracking-widest group-hover:text-cyan-400 transition-colors truncate">
+                                                {ticket.title}
+                                            </div>
                                         </div>
-                                        <div className="text-[10px] text-cyan-800 uppercase font-bold tracking-tighter truncate mt-1">
-                                            Log Fragment: {ticket.description || "NO RECORDS FOUND"}
+                                        <div className="text-[10px] text-cyan-800 uppercase font-bold tracking-tighter truncate mt-1 ml-5">
+                                            {ticket.description || "NO RECORDS FOUND"}
                                         </div>
                                     </div>
 
@@ -94,16 +147,22 @@ export const BacklogView: React.FC<BacklogViewProps> = ({ tickets, epics, onTick
                                         )}
                                     </div>
 
-                                    <div className={`col-span-2 text-[10px] font-black uppercase tracking-widest relative z-10 ${priorityColor[ticket.priority]}`}>
-                                        {ticket.priority}
+                                    <div className={`col-span-2 text-[10px] font-black uppercase tracking-widest relative z-10 ${impactColor[ticket.impact]}`}>
+                                        {ticket.impact}
                                     </div>
 
                                     <div className="col-span-1 flex justify-center relative z-10">
-                                        {ticket.storyPoints > 0 && (
+                                        {ticket.effort > 0 && (
                                             <div className="flex items-center text-[10px] font-black text-cyan-700 bg-black/40 px-2 py-0.5 rounded border border-cyan-900/30">
-                                                <Hash size={10} className="mr-0.5" /> {ticket.storyPoints}
+                                                <Hash size={10} className="mr-0.5" /> {ticket.effort}
                                             </div>
                                         )}
+                                    </div>
+
+                                    <div className="col-span-1 flex justify-center relative z-10">
+                                        <div className="flex items-center text-[9px] font-black bg-black/40 px-2 py-0.5 rounded border border-cyan-900/30" style={{ color: wsjfScore >= 2 ? '#10b981' : wsjfScore >= 1 ? '#f59e0b' : '#64748b' }}>
+                                            {wsjfScore}
+                                        </div>
                                     </div>
 
                                     <div className="col-span-2 flex justify-end relative z-10">

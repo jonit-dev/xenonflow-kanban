@@ -14,6 +14,9 @@ export enum TicketPriority {
   CRITICAL = 'critical',
 }
 
+// Aliases for clarity - TicketPriority now represents "Impact"
+export { TicketPriority as TicketImpact };
+
 // Database Models (as returned from SQLite)
 export interface DbUser {
   id: string;
@@ -59,8 +62,8 @@ export interface DbTicket {
   title: string;
   description: string | null;
   status: TicketStatus;
-  priority: TicketPriority;
-  story_points: number;
+  impact: TicketPriority; // Renamed from priority
+  effort: number; // Renamed from story_points
   start_date: string | null;
   end_date: string | null;
   ai_insights: string | null;
@@ -98,8 +101,8 @@ export interface CreateTicketDto {
   title: string;
   description?: string;
   status?: TicketStatus;
-  priority?: TicketPriority;
-  story_points?: number;
+  impact?: TicketPriority; // Renamed from priority
+  effort?: number; // Renamed from story_points
   epic_id?: string;
   assignee_id?: string;
   start_date?: string;
@@ -112,8 +115,8 @@ export interface UpdateTicketDto {
   title?: string;
   description?: string;
   status?: TicketStatus;
-  priority?: TicketPriority;
-  story_points?: number;
+  impact?: TicketPriority; // Renamed from priority
+  effort?: number; // Renamed from story_points
   epic_id?: string;
   assignee_id?: string;
   start_date?: string;
@@ -195,8 +198,8 @@ export interface Ticket {
   title: string;
   description?: string; // Supports markdown
   status: TicketStatus;
-  priority: TicketPriority;
-  storyPoints: number;
+  impact: TicketPriority; // Renamed from priority - represents business impact
+  effort: number; // Renamed from storyPoints - represents implementation effort
   startDate?: string;
   endDate?: string;
   aiInsights?: string;

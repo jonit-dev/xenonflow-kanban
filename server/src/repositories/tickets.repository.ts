@@ -43,8 +43,8 @@ export class TicketsRepository extends BaseRepository {
 
     this.database().prepare(`
       INSERT INTO tickets (
-        id, project_id, epic_id, assignee_id, title, description, status, priority,
-        story_points, start_date, end_date, ai_insights, position, flagged, requires_human, created_at, updated_at
+        id, project_id, epic_id, assignee_id, title, description, status, impact,
+        effort, start_date, end_date, ai_insights, position, flagged, requires_human, created_at, updated_at
       )
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
@@ -55,8 +55,8 @@ export class TicketsRepository extends BaseRepository {
       dto.title,
       dto.description || null,
       dto.status || TicketStatus.TODO,
-      dto.priority || 'low',
-      dto.story_points || 0,
+      dto.impact || 'low',
+      dto.effort || 0,
       dto.start_date || null,
       dto.end_date || null,
       null,
@@ -89,13 +89,13 @@ export class TicketsRepository extends BaseRepository {
       updates.push('status = ?');
       values.push(dto.status);
     }
-    if (dto.priority !== undefined) {
-      updates.push('priority = ?');
-      values.push(dto.priority);
+    if (dto.impact !== undefined) {
+      updates.push('impact = ?');
+      values.push(dto.impact);
     }
-    if (dto.story_points !== undefined) {
-      updates.push('story_points = ?');
-      values.push(dto.story_points);
+    if (dto.effort !== undefined) {
+      updates.push('effort = ?');
+      values.push(dto.effort);
     }
     if (dto.epic_id !== undefined) {
       updates.push('epic_id = ?');
@@ -157,8 +157,8 @@ export class TicketsRepository extends BaseRepository {
       title: db.title,
       description: db.description || undefined,
       status: db.status,
-      priority: db.priority,
-      storyPoints: db.story_points,
+      impact: db.impact,
+      effort: db.effort,
       startDate: db.start_date || undefined,
       endDate: db.end_date || undefined,
       aiInsights: db.ai_insights || undefined,

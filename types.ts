@@ -17,8 +17,8 @@ export interface Ticket {
   title: string;
   description: string; // Supports markdown
   status: TicketStatus;
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  storyPoints: number;
+  impact: 'low' | 'medium' | 'high' | 'critical'; // Renamed from priority
+  effort: number; // Renamed from storyPoints
   epicId?: string;
   assignee?: string;
   startDate?: string; // YYYY-MM-DD

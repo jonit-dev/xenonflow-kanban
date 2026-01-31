@@ -18,8 +18,8 @@ export const consultMotherOnTicket = async (ticket: Ticket, epicName?: string): 
       Data:
       - Unit ID: "${ticket.title}"
       - Description: "${ticket.description}"
-      - Priority Level: "${ticket.priority}"
-      - Complexity (Story Points): ${ticket.storyPoints}
+      - Priority Level: "${ticket.impact}"
+      - Complexity (Story Points): ${ticket.effort}
       - Protocol Layer (Epic): "${epicName || 'None'}"
       
       Output:
@@ -49,10 +49,10 @@ export const consultMotherOnProject = async (project: Project): Promise<string> 
     const progressCount = project.tickets.filter(t => t.status === 'IN_PROGRESS').length;
     
     // Calculate total story points
-    const totalPoints = project.tickets.reduce((acc, t) => acc + (t.storyPoints || 0), 0);
+    const totalPoints = project.tickets.reduce((acc, t) => acc + (t.effort || 0), 0);
     const completedPoints = project.tickets
       .filter(t => t.status === 'DONE')
-      .reduce((acc, t) => acc + (t.storyPoints || 0), 0);
+      .reduce((acc, t) => acc + (t.effort || 0), 0);
 
     const prompt = `
       Role: You are the "Mother", an alien hive-mind AI overseer.
@@ -62,7 +62,7 @@ export const consultMotherOnProject = async (project: Project): Promise<string> 
       - Pending Units: ${todoCount}
       - Active Units: ${progressCount}
       - Completed Units: ${doneCount}
-      - Biomass Processed (Story Points): ${completedPoints} / ${totalPoints}
+      - Biomass Processed (Effort Points): ${completedPoints} / ${totalPoints}
       
       Output: A single paragraph judgment of the hive's efficiency. Be critical if progress is slow. Be approving if efficiency is high. Use biomechanical metaphors.
     `;

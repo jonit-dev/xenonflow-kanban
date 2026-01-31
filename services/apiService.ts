@@ -27,8 +27,8 @@ export interface ApiTicket {
   title: string;
   description?: string;
   status: string;
-  priority: string;
-  storyPoints: number;
+  impact: string;
+  effort: number;
   startDate?: string;
   endDate?: string;
   aiInsights?: string;
@@ -158,8 +158,8 @@ export const ticketsApi = {
     title: string;
     description?: string;
     status?: string;
-    priority?: string;
-    storyPoints?: number;
+    impact?: string;
+    effort?: number;
     epicId?: string;
     assigneeId?: string;
     startDate?: string;
@@ -175,8 +175,8 @@ export const ticketsApi = {
       title: data.title,
       description: data.description,
       status: data.status,
-      priority: data.priority,
-      story_points: data.storyPoints,
+      impact: data.impact,
+      story_points: data.effort,
       epic_id: data.epicId,
       assignee_id: data.assigneeId,
       start_date: data.startDate,
@@ -200,9 +200,9 @@ export const ticketsApi = {
     if (data.description !== undefined)
       snakeCaseData.description = data.description;
     if (data.status !== undefined) snakeCaseData.status = data.status;
-    if (data.priority !== undefined) snakeCaseData.priority = data.priority;
-    if (data.storyPoints !== undefined)
-      snakeCaseData.story_points = data.storyPoints;
+    if (data.impact !== undefined) snakeCaseData.impact = data.impact;
+    if (data.effort !== undefined)
+      snakeCaseData.story_points = data.effort;
     if (data.epicId !== undefined) snakeCaseData.epic_id = data.epicId;
     if (data.assigneeId !== undefined)
       snakeCaseData.assignee_id = data.assigneeId;

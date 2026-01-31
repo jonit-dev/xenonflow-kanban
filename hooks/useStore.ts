@@ -4,6 +4,7 @@ import { useStore } from '../stores';
 export const useProjectsList = () => useStore((state) => state.projects);
 export const useActiveProjectData = () => useStore((state) => state.projects.find((p) => p.id === state.activeProjectId) || null);
 export const useSetActiveProject = () => useStore((state) => state.setActiveProjectId);
+export const useLoadProjectDetails = () => useStore((state) => state.loadProjectDetails);
 export const useCreateProject = () => useStore((state) => state.createProject);
 export const useLoadProjects = () => useStore((state) => state.loadProjects);
 

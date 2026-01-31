@@ -1,4 +1,4 @@
-import { Activity, BrainCircuit, Calendar, Hash, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { Activity, BrainCircuit, Calendar, Flag, Hash, MoreVertical, Pencil, Trash2, User } from 'lucide-react';
 import React from 'react';
 import { Epic, Ticket, TicketStatus } from '../types';
 
@@ -13,11 +13,27 @@ interface TicketCardProps {
 
 export const TicketCard: React.FC<TicketCardProps> = ({ ticket, epic, onDragStart, onClick }) => {
 
-  const priorityColor = {
-    low: 'border-l-slate-700',
-    medium: 'border-l-cyan-600',
-    high: 'border-l-orange-500',
-    critical: 'border-l-rose-600 shadow-[0_0_15px_rgba(225,29,72,0.3)]'
+  const impact = ticket.impact || 'low';
+
+  const impactColor: Record<string, string> = {
+    low: 'border-l-emerald-600',
+    medium: 'border-l-cyan-500',
+    high: 'border-l-amber-500',
+    critical: 'border-l-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.5)]'
+  };
+
+  const flagColor = {
+    hazard: 'bg-orange-500/10 border-orange-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)]',
+    bioLink: 'bg-yellow-500/10 border-yellow-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)]',
+    both: 'bg-gradient-to-r from-orange-500/10 to-yellow-500/10 border-orange-500/30 shadow-[0_0_15px_rgba(245,158,11,0.2)]',
+    none: 'border-cyan-900/20'
+  };
+
+  const getFlagClass = () => {
+    if (ticket.flagged && ticket.requiresHuman) return flagColor.both;
+    if (ticket.flagged) return flagColor.hazard;
+    if (ticket.requiresHuman) return flagColor.bioLink;
+    return flagColor.none;
   };
 
   const formatDate = (dateStr?: string) => {
@@ -32,9 +48,9 @@ export const TicketCard: React.FC<TicketCardProps> = ({ ticket, epic, onDragStar
       onDragStart={(e) => onDragStart(e, ticket.id)}
       onClick={() => onClick(ticket)}
       className={`
-        group relative p-4 mb-3 bg-slate-900/40 backdrop-blur-md 
-        border border-cyan-900/20 ${priorityColor[ticket.priority]} border-l-4 
-        hover:border-cyan-500/40 hover:bg-slate-800/40 
+        group relative p-4 mb-3 bg-slate-900/40 backdrop-blur-md
+        border ${getFlagClass()} ${impactColor[impact]} border-l-4
+        hover:border-cyan-500/40 hover:bg-slate-800/40
         transition-all cursor-move select-none rounded-r-lg
       `}
     >
@@ -43,6 +59,10 @@ export const TicketCard: React.FC<TicketCardProps> = ({ ticket, epic, onDragStar
           <h4 className="text-cyan-100 font-bold text-xs uppercase tracking-widest leading-tight pr-2 group-hover:text-cyan-400 transition-colors">
             {ticket.title}
           </h4>
+          <div className="flex items-center gap-1 shrink-0">
+            {ticket.flagged && <Flag size={12} className="text-orange-500" />}
+            {ticket.requiresHuman && <User size={12} className="text-yellow-500" />}
+          </div>
         </div>
         {ticket.aiInsights && (
           <BrainCircuit size={14} className="text-cyan-400 animate-pulse shrink-0" />
@@ -64,10 +84,10 @@ export const TicketCard: React.FC<TicketCardProps> = ({ ticket, epic, onDragStar
 
       <div className="flex items-center justify-between mt-3">
         <div className="flex items-center gap-2">
-          {ticket.storyPoints > 0 && (
+          {ticket.effort > 0 && (
             <div className="flex items-center text-[9px] font-black text-cyan-600 bg-black/40 px-2 py-0.5 rounded border border-cyan-900/30">
               <Hash size={9} className="mr-0.5" />
-              {ticket.storyPoints}
+              {ticket.effort}
             </div>
           )}
           {epic && (
@@ -84,8 +104,8 @@ export const TicketCard: React.FC<TicketCardProps> = ({ ticket, epic, onDragStar
           )}
         </div>
 
-        <span className={`text-[8px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded ${ticket.priority === 'critical' ? 'bg-rose-950/50 text-rose-500 border border-rose-500/30' : 'bg-slate-950/50 text-slate-600 border border-slate-800/50'}`}>
-          {ticket.priority.substring(0, 4)}
+        <span className={`text-[8px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded ${impact === 'critical' ? 'bg-rose-950/50 text-rose-500 border border-rose-500/30' : 'bg-slate-950/50 text-slate-600 border border-slate-800/50'}`}>
+          {impact.substring(0, 4)}
         </span>
       </div>
 
@@ -172,7 +192,7 @@ export const Column: React.FC<ColumnProps> = ({
           <div className="flex items-center gap-2 text-cyan-800">
             <span className="text-[10px] font-black font-mono flex items-center">
               <Hash size={10} className="mr-0.5" />
-              {tickets.reduce((acc, t) => acc + (t.storyPoints || 0), 0)}
+              {tickets.reduce((acc, t) => acc + (t.effort || 0), 0)}
             </span>
             <span className="text-[10px] font-black font-mono">[{tickets.length}]</span>
           </div>

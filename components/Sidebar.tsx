@@ -46,10 +46,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }
 
   // Calculate Progress
-  const totalPoints = activeProject?.tickets.reduce((sum, t) => sum + (t.storyPoints || 0), 0) || 0;
+  const totalPoints = activeProject?.tickets.reduce((sum, t) => sum + (t.effort || 0), 0) || 0;
   const donePoints = activeProject?.tickets
     .filter(t => t.status === 'DONE')
-    .reduce((sum, t) => sum + (t.storyPoints || 0), 0) || 0;
+    .reduce((sum, t) => sum + (t.effort || 0), 0) || 0;
 
   const progressPercent = totalPoints > 0 ? (donePoints / totalPoints) * 100 : 0;
 

@@ -1,10 +1,11 @@
 import { Ticket, TicketStatus } from '../types';
 
-export type ViewMode = 'BOARD' | 'TIMELINE' | 'BACKLOG';
-
+// Extend Ticket type with draft-specific fields
 export interface DraftTicket extends Ticket {
   isDirty: boolean;
 }
+
+export type ViewMode = 'BOARD' | 'TIMELINE' | 'BACKLOG';
 
 export interface ModalState {
   mother: {

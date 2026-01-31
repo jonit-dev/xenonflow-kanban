@@ -17,6 +17,7 @@ import {
   useCloseMotherModal,
   useIsAppLoading,
   useLoadProjects,
+  useLoadProjectDetails,
   useIsMotherModalOpen,
   useMotherModalContent,
   useMotherModalTitle,
@@ -76,6 +77,7 @@ export default function App() {
 
   // Data actions
   const loadProjects = useLoadProjects();
+  const loadProjectDetails = useLoadProjectDetails();
   const saveTicket = useSaveTicket();
   const deleteTicket = useDeleteTicket();
   const updateTicketStatus = useUpdateTicketStatus();
@@ -208,7 +210,10 @@ export default function App() {
       <Sidebar
         projects={projects}
         activeProjectId={activeProject.id}
-        onSelectProject={(id) => setActiveProject(id)}
+        onSelectProject={async (id) => {
+          setActiveProject(id);
+          await loadProjectDetails(id);
+        }}
         onCreateProject={createProject}
         onMotherJudgment={handleMotherJudgment}
         onCreateEpic={createEpic}

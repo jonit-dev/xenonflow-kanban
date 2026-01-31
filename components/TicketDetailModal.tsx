@@ -69,11 +69,17 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
     }
   });
 
-  // Sync with prop ticket
+  // Sync with prop ticket - only when ticket ID changes or modal opens
+  const prevTicketIdRef = useRef<string | null>(null);
   useEffect(() => {
-    setEditedTicket(ticket);
-    setHasUnsavedChanges(false);
-  }, [ticket]);
+    // Only reset if the ticket ID changed (different ticket opened)
+    if (ticket?.id !== prevTicketIdRef.current) {
+      setEditedTicket(ticket);
+      setHasUnsavedChanges(false);
+      prevTicketIdRef.current = ticket?.id || null;
+    }
+    // If same ticket, keep local edits to prevent overwriting during save
+  }, [ticket?.id, isOpen]);
 
   // Handle field changes with auto-save
   const handleChange = useCallback((field: keyof Ticket, value: any, immediate = false) => {
@@ -164,7 +170,7 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                 />
               </div>
 
-              {/* Row 1: Status, Priority, Points, Epic */}
+              {/* Row 1: Status, Impact, Effort, Epic */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {/* Status */}
                 <div className="space-y-2">
@@ -180,12 +186,12 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                   </select>
                 </div>
 
-                {/* Priority */}
+                {/* Impact */}
                 <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-[0.3em] text-cyan-700 font-black">Priority</label>
+                  <label className="text-[10px] uppercase tracking-[0.3em] text-cyan-700 font-black">Impact</label>
                   <select
-                    value={editedTicket.priority}
-                    onChange={(e) => handleChange('priority', e.target.value, true)}
+                    value={editedTicket.impact}
+                    onChange={(e) => handleChange('impact', e.target.value, true)}
                     className="w-full bg-black/40 border border-cyan-900/30 text-cyan-300 p-3 text-[10px] font-black tracking-widest focus:border-cyan-500 focus:outline-none rounded-md appearance-none uppercase"
                   >
                     <option value="low" className="bg-slate-900">LOW</option>
@@ -195,14 +201,14 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                   </select>
                 </div>
 
-                {/* Story Points */}
+                {/* Effort */}
                 <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-[0.3em] text-cyan-700 font-black">Complexity</label>
+                  <label className="text-[10px] uppercase tracking-[0.3em] text-cyan-700 font-black">Effort</label>
                   <input
                     type="number"
                     min="0"
-                    value={editedTicket.storyPoints}
-                    onChange={(e) => handleChange('storyPoints', parseInt(e.target.value) || 0, true)}
+                    value={editedTicket.effort}
+                    onChange={(e) => handleChange('effort', parseInt(e.target.value) || 0, true)}
                     className="w-full bg-black/40 border border-cyan-900/30 text-cyan-300 p-3 text-[11px] font-black focus:border-cyan-500 focus:outline-none rounded-md"
                   />
                 </div>

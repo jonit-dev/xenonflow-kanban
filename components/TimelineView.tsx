@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Activity } from 'lucide-react';
+import { Activity, Flag, User } from 'lucide-react';
 import React from 'react';
 import { Epic, Ticket } from '../types';
 
@@ -93,11 +93,27 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ tickets, epics, onTi
               const pos = getGridPosition(ticket);
               const epic = epics.find(e => e.id === ticket.epicId);
 
+              // Flag styling for timeline bar
+              const getFlagBarStyle = () => {
+                if (ticket.flagged && ticket.requiresHuman) {
+                  return 'from-orange-500/20 to-yellow-500/20 border-orange-500/50';
+                }
+                if (ticket.flagged) return 'bg-orange-500/20 border-orange-500/50';
+                if (ticket.requiresHuman) return 'bg-yellow-500/20 border-yellow-500/50';
+                return '';
+              };
+
               return (
                 <React.Fragment key={ticket.id}>
                   <div className="sticky left-0 z-10 bg-slate-900/40 backdrop-blur-md border border-cyan-900/20 p-3 flex items-center h-12 rounded-l-lg group cursor-pointer" onClick={() => onTicketClick(ticket)}>
-                    <div className="truncate text-[10px] text-cyan-100 font-black uppercase tracking-wider group-hover:text-cyan-400 transition-colors">
-                      {ticket.title}
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 shrink-0">
+                        {ticket.flagged && <Flag size={11} className="text-orange-500" />}
+                        {ticket.requiresHuman && <User size={11} className="text-yellow-500" />}
+                      </div>
+                      <div className="truncate text-[10px] text-cyan-100 font-black uppercase tracking-wider group-hover:text-cyan-400 transition-colors">
+                        {ticket.title}
+                      </div>
                     </div>
                   </div>
 
@@ -105,7 +121,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({ tickets, epics, onTi
                     <motion.div
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className="relative h-10 mt-1 rounded-r-lg text-[9px] font-black flex items-center px-4 truncate cursor-pointer hover:brightness-125 transition-all shadow-lg border-y border-r border-white/5 uppercase tracking-widest"
+                      className={`relative h-10 mt-1 rounded-r-lg text-[9px] font-black flex items-center px-4 truncate cursor-pointer hover:brightness-125 transition-all shadow-lg border-y border-r border-white/5 uppercase tracking-widest ${getFlagBarStyle()}`}
                       style={{
                         ...pos,
                         backgroundColor: epic ? `${epic.color}30` : '#083344',

@@ -30,6 +30,7 @@ export interface DbProject {
   id: string;
   name: string;
   description: string | null;
+  goal: string | null;
   created_at: number;
   updated_at: number;
 }
@@ -79,11 +80,13 @@ export interface DbTicket {
 export interface CreateProjectDto {
   name: string;
   description?: string;
+  goal?: string;
 }
 
 export interface UpdateProjectDto {
   name?: string;
   description?: string;
+  goal?: string;
 }
 
 export interface CreateEpicDto {
@@ -169,6 +172,7 @@ export interface Project {
   id: string;
   name: string;
   description?: string;
+  goal?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -51,8 +51,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   }
 
-  const handleDeleteConfirm = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleDeleteConfirm = () => {
     if (deleteConfirmProject && deleteConfirmName.trim().toLowerCase() === deleteConfirmProject.name.trim().toLowerCase()) {
       onDeleteProject(deleteConfirmProject.id);
       setDeleteConfirmProject(null);

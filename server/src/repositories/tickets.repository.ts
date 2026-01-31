@@ -153,6 +153,8 @@ export class TicketsRepository extends BaseRepository {
       endDate: db.end_date || undefined,
       aiInsights: db.ai_insights || undefined,
       position: db.position,
+      flagged: db.flagged === 1,
+      requiresHuman: db.requires_human === 1,
       createdAt: this.timestampToIso(db.created_at),
       updatedAt: this.timestampToIso(db.updated_at),
     };

@@ -55,6 +55,8 @@ export interface DbTicket {
   end_date: string | null;
   ai_insights: string | null;
   position: number;
+  flagged: number; // 0 or 1
+  requires_human: number; // 0 or 1
   created_at: number;
   updated_at: number;
 }
@@ -154,7 +156,7 @@ export interface Ticket {
   epicId?: string;
   assigneeId?: string;
   title: string;
-  description?: string;
+  description?: string; // Supports markdown
   status: TicketStatus;
   priority: TicketPriority;
   storyPoints: number;
@@ -162,6 +164,8 @@ export interface Ticket {
   endDate?: string;
   aiInsights?: string;
   position: number;
+  flagged?: boolean;  // Important/urgent flag
+  requiresHuman?: boolean; // Needs human intervention
   createdAt: string;
   updatedAt: string;
 }

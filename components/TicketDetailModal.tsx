@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Ticket, TicketStatus, Epic } from '../types';
 import { Button } from './ui/Button';
-import { X, Save, Trash2, BrainCircuit, Layers, Calendar, Archive } from 'lucide-react';
+import { X, Save, Trash2, BrainCircuit, Layers, Calendar, Archive, Flag, User } from 'lucide-react';
 
 interface TicketDetailModalProps {
   ticket: Ticket | null;
@@ -158,13 +158,46 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
               </div>
           </div>
 
-          {/* Description */}
+          {/* Flags Row */}
+          <div className="grid grid-cols-2 gap-4">
+              <div 
+                onClick={() => handleChange('flagged', !editedTicket.flagged)}
+                className={`flex items-center gap-3 p-3 border cursor-pointer transition-all ${
+                  editedTicket.flagged 
+                    ? 'bg-orange-950/30 border-orange-500/50 text-orange-400' 
+                    : 'bg-slate-900/50 border-slate-700 text-slate-500 hover:border-orange-500/30'
+                }`}
+              >
+                <Flag size={16} />
+                <div>
+                  <div className="text-[10px] uppercase tracking-widest font-bold">Flagged</div>
+                  <div className="text-[9px] opacity-70">Important/Urgent</div>
+                </div>
+              </div>
+              <div 
+                onClick={() => handleChange('requiresHuman', !editedTicket.requiresHuman)}
+                className={`flex items-center gap-3 p-3 border cursor-pointer transition-all ${
+                  editedTicket.requiresHuman 
+                    ? 'bg-yellow-950/30 border-yellow-500/50 text-yellow-400' 
+                    : 'bg-slate-900/50 border-slate-700 text-slate-500 hover:border-yellow-500/30'
+                }`}
+              >
+                <User size={16} />
+                <div>
+                  <div className="text-[10px] uppercase tracking-widest font-bold">Requires Human</div>
+                  <div className="text-[9px] opacity-70">Needs intervention</div>
+                </div>
+              </div>
+          </div>
+
+          {/* Description - supports markdown */}
           <div className="space-y-1">
-            <label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Unit Description</label>
+            <label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Unit Description (Markdown)</label>
             <textarea 
               value={editedTicket.description}
               onChange={(e) => handleChange('description', e.target.value)}
               rows={6}
+              placeholder="Supports **bold**, *italic*, `code`, - lists..."
               className="w-full bg-slate-900/50 border border-slate-700 text-slate-300 p-3 focus:border-cyan-500 focus:outline-none font-mono text-sm leading-relaxed"
             />
           </div>

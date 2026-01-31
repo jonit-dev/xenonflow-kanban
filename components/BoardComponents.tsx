@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Ticket, TicketStatus, Epic } from '../types';
-import { MoreVertical, Trash2, BrainCircuit, Hash, Calendar } from 'lucide-react';
+import { MoreVertical, Trash2, BrainCircuit, Hash, Calendar, Flag, User } from 'lucide-react';
 
 // --- Ticket Component ---
 
@@ -40,7 +40,15 @@ export const TicketCard: React.FC<TicketCardProps> = ({ ticket, epic, onDragStar
       `}
     >
       <div className="flex justify-between items-start mb-2">
-        <h4 className="text-cyan-100 font-medium text-sm leading-tight pr-2">{ticket.title}</h4>
+        <div className="flex items-center gap-1.5">
+          {ticket.flagged && (
+            <Flag size={12} className="text-orange-500 shrink-0" title="Flagged" />
+          )}
+          {ticket.requiresHuman && (
+            <User size={12} className="text-yellow-500 shrink-0" title="Requires human intervention" />
+          )}
+          <h4 className="text-cyan-100 font-medium text-sm leading-tight pr-2">{ticket.title}</h4>
+        </div>
         {ticket.aiInsights && (
           <BrainCircuit size={14} className="text-purple-500 animate-pulse shrink-0" title="Mother has spoken" />
         )}

@@ -1,5 +1,6 @@
 import { Activity, AlertTriangle, Hash, Hexagon, Plus, Trash2, X } from 'lucide-react';
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Project } from '../types';
 
 interface SidebarProps {
@@ -52,14 +53,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const handleDeleteConfirm = (e: React.FormEvent) => {
     e.preventDefault();
-    if (deleteConfirmProject && deleteConfirmName === deleteConfirmProject.name) {
+    if (deleteConfirmProject && deleteConfirmName.trim().toLowerCase() === deleteConfirmProject.name.trim().toLowerCase()) {
       onDeleteProject(deleteConfirmProject.id);
       setDeleteConfirmProject(null);
       setDeleteConfirmName('');
     }
   }
 
-  const isDeleteConfirmValid = deleteConfirmProject && deleteConfirmName === deleteConfirmProject.name;
+  const isDeleteConfirmValid = deleteConfirmProject && deleteConfirmName.trim().toLowerCase() === deleteConfirmProject.name.trim().toLowerCase();
 
   // Calculate Progress
   const totalPoints = activeProject?.tickets.reduce((sum, t) => sum + (t.effort || 0), 0) || 0;
@@ -220,16 +221,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Delete Confirmation Modal */}
-      {deleteConfirmProject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {deleteConfirmProject && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/90 backdrop-blur-md"
+            className="absolute inset-0 bg-black/95 backdrop-blur-md"
             onClick={() => {
               setDeleteConfirmProject(null);
               setDeleteConfirmName('');
             }}
           />
-          <div className="relative w-full max-w-md bg-slate-900/40 backdrop-blur-2xl border border-rose-500/30 shadow-[0_0_80px_rgba(244,63,94,0.15)] rounded-lg font-mono">
+          <div className="relative w-full max-w-md bg-slate-900/90 backdrop-blur-2xl border border-rose-500/50 shadow-[0_0_100px_rgba(244,63,94,0.3)] rounded-lg font-mono">
             {/* Header */}
             <div className="p-6 border-b border-rose-500/20 bg-rose-950/20 flex justify-between items-center">
               <div className="flex items-center gap-4">
@@ -313,7 +314,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="absolute bottom-2 left-2 w-1 h-1 bg-rose-500/60 rounded-full"></div>
             <div className="absolute bottom-2 right-2 w-1 h-1 bg-rose-500/60 rounded-full"></div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

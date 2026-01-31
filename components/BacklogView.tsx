@@ -1,7 +1,14 @@
 import { motion } from 'framer-motion';
-import { Activity, Archive, Database, Flag, Hash, Play, User, ChevronDown, ChevronRight } from 'lucide-react';
+import { Activity, Archive, Calendar, Database, Flag, Hash, Play, User, ChevronDown, ChevronRight } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import { Epic, Ticket } from '../types';
+import { sortTicketsByPriority, getImpactWeight } from '../lib/ticketUtils';
+
+// Format date for display
+const formatDate = (dateStr: string): string => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
 
 interface BacklogViewProps {
     tickets: Ticket[];
@@ -9,45 +16,6 @@ interface BacklogViewProps {
     onTicketClick: (ticket: Ticket) => void;
     onMoveToBoard: (ticket: Ticket) => void;
 }
-
-// Impact weights for priority sorting
-const IMPACT_WEIGHTS: Record<string, number> = {
-    critical: 4,
-    high: 3,
-    medium: 2,
-    low: 1
-};
-
-const getImpactWeight = (impact: string): number => IMPACT_WEIGHTS[impact] || 1;
-
-// Sort tickets by priority (impact), then by start/end date
-const sortTicketsByPriority = (tickets: Ticket[]): Ticket[] => {
-    return [...tickets].sort((a, b) => {
-        const aImpact = getImpactWeight(a.impact);
-        const bImpact = getImpactWeight(b.impact);
-
-        // Sort by impact (higher first)
-        if (aImpact !== bImpact) return bImpact - aImpact;
-
-        // Same impact - sort by start date
-        if (a.startDate && b.startDate) {
-            const startCompare = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
-            if (startCompare !== 0) return startCompare;
-        }
-        if (a.startDate) return -1;
-        if (b.startDate) return 1;
-
-        // Same impact, no start date - sort by end date
-        if (a.endDate && b.endDate) {
-            return new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
-        }
-        if (a.endDate) return -1;
-        if (b.endDate) return 1;
-
-        // Same impact, no dates - maintain position order
-        return (a.position || 0) - (b.position || 0);
-    });
-};
 
 // Group tickets by epic
 interface EpicGroup {
@@ -117,13 +85,6 @@ export const BacklogView: React.FC<BacklogViewProps> = ({ tickets, epics, onTick
         if (ticket.flagged) return 'bg-orange-500/10 border-orange-500/40';
         if (ticket.requiresHuman) return 'bg-yellow-500/10 border-yellow-500/40';
         return 'border-cyan-900/10';
-    };
-
-    // Calculate WSJF score for display
-    const getWSJFScore = (ticket: Ticket): number => {
-        const impact = getImpactWeight(ticket.impact);
-        const effort = ticket.effort || 1;
-        return Math.round((impact / effort) * 100) / 100;
     };
 
     // Get epic key for collapse state
@@ -219,24 +180,23 @@ export const BacklogView: React.FC<BacklogViewProps> = ({ tickets, epics, onTick
                                             className="border border-t-0 border-cyan-900/10 rounded-b-lg overflow-hidden"
                                         >
                                             {/* Header Row */}
-                                            <div className="grid grid-cols-11 gap-6 px-6 py-3 text-[10px] font-black text-cyan-800 uppercase tracking-[0.2em] border-b border-cyan-900/10 bg-slate-900/20">
+                                            <div className="grid grid-cols-12 gap-4 px-6 py-3 text-[10px] font-black text-cyan-800 uppercase tracking-[0.2em] border-b border-cyan-900/10 bg-slate-900/20">
                                                 <div className="col-span-4">Unit Designation</div>
                                                 <div className="col-span-2">Impact</div>
+                                                <div className="col-span-3 text-center">Dates</div>
                                                 <div className="col-span-1 text-center">Effort</div>
-                                                <div className="col-span-1 text-center">WSJF</div>
-                                                <div className="col-span-3 text-right">Action</div>
+                                                <div className="col-span-2 text-right">Action</div>
                                             </div>
 
                                             {/* Ticket Rows */}
                                             <div className="divide-y divide-cyan-900/5">
                                                 {group.tickets.map((ticket) => {
-                                                    const wsjfScore = getWSJFScore(ticket);
                                                     return (
                                                         <motion.div
                                                             key={ticket.id}
                                                             initial={{ opacity: 0, x: -10 }}
                                                             animate={{ opacity: 1, x: 0 }}
-                                                            className={`group grid grid-cols-11 gap-6 px-6 py-3 items-center bg-slate-900/10 hover:bg-cyan-950/10 transition-all cursor-pointer relative overflow-hidden ${getFlagClass(ticket)}`}
+                                                            className={`group grid grid-cols-12 gap-4 px-6 py-3 items-center bg-slate-900/10 hover:bg-cyan-950/10 transition-all cursor-pointer relative overflow-hidden ${getFlagClass(ticket)}`}
                                                             onClick={() => onTicketClick(ticket)}
                                                         >
                                                             <div className="col-span-4 relative z-10">
@@ -258,6 +218,20 @@ export const BacklogView: React.FC<BacklogViewProps> = ({ tickets, epics, onTick
                                                                 {ticket.impact}
                                                             </div>
 
+                                                            <div className="col-span-3 flex justify-center relative z-10">
+                                                                {ticket.startDate || ticket.endDate ? (
+                                                                    <div className="flex items-center gap-1 text-[9px] text-cyan-700">
+                                                                        <Calendar size={10} />
+                                                                        <span className="font-mono">
+                                                                            {ticket.startDate ? formatDate(ticket.startDate) : '---'}
+                                                                            {ticket.endDate ? ` → ${formatDate(ticket.endDate)}` : ''}
+                                                                        </span>
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="text-[9px] text-cyan-900 italic">No dates</span>
+                                                                )}
+                                                            </div>
+
                                                             <div className="col-span-1 flex justify-center relative z-10">
                                                                 {ticket.effort > 0 && (
                                                                     <div className="flex items-center text-[10px] font-black text-cyan-700 bg-black/40 px-2 py-0.5 rounded border border-cyan-900/30">
@@ -266,13 +240,7 @@ export const BacklogView: React.FC<BacklogViewProps> = ({ tickets, epics, onTick
                                                                 )}
                                                             </div>
 
-                                                            <div className="col-span-1 flex justify-center relative z-10">
-                                                                <div className="flex items-center text-[9px] font-black bg-black/40 px-2 py-0.5 rounded border border-cyan-900/30" style={{ color: wsjfScore >= 2 ? '#10b981' : wsjfScore >= 1 ? '#f59e0b' : '#64748b' }}>
-                                                                    {wsjfScore}
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="col-span-3 flex justify-end relative z-10">
+                                                            <div className="col-span-2 flex justify-end relative z-10">
                                                                 <button
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();

@@ -91,6 +91,7 @@ export default function App() {
   const updateColumn = useUpdateColumn();
   const deleteColumn = useDeleteColumn();
   const createColumn = useCreateColumn();
+  const moveTicketToBoard = useMoveTicketToBoard();
 
   // Initialize app
   useEffect(() => {
@@ -363,7 +364,7 @@ export default function App() {
                   tickets={activeProject.tickets.filter((t) => t.status === TicketStatus.BACKLOG)}
                   epics={activeProject.epics}
                   onTicketClick={(ticket) => openTicketModal(ticket.id)}
-                  onMoveToBoard={useMoveTicketToBoard()}
+                  onMoveToBoard={moveTicketToBoard}
                 />
               </motion.div>
             )}

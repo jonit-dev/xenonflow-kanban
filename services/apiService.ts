@@ -40,6 +40,7 @@ export interface ApiTicket {
   endDate?: string;
   aiInsights?: string;
   prUrl?: string;
+  prdUrl?: string;
   position: number;
   flagged?: boolean;
   requiresHuman?: boolean;

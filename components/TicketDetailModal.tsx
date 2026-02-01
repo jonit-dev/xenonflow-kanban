@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Archive, BrainCircuit, Calendar, Cpu, Database, Flag, Layers, Save, Trash2, User, X } from 'lucide-react';
+import { Archive, BrainCircuit, Calendar, Cpu, Database, FileText, Flag, Github, Layers, Link, Save, Trash2, User, X } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Epic, Ticket, TicketStatus } from '../types';
 import { Button } from './ui/Button';
@@ -284,6 +284,58 @@ export const TicketDetailModal: React.FC<TicketDetailModalProps> = ({
                   <div>
                     <div className="text-[10px] uppercase tracking-[0.2em] font-black">Bio-Link</div>
                     <div className="text-[9px] font-bold opacity-60">Human Interface Req</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* External Links Row - PR and PRD */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-[0.3em] text-cyan-700 font-black flex items-center gap-2">
+                    <Github size={12} /> GitHub PR
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="url"
+                      value={editedTicket.prUrl || ''}
+                      onChange={(e) => handleChange('prUrl', e.target.value || undefined)}
+                      placeholder="https://github.com/..."
+                      className="w-full bg-black/40 border border-cyan-900/30 text-cyan-300 p-3 pr-10 text-[10px] font-mono focus:border-cyan-500 focus:outline-none rounded-md"
+                    />
+                    {editedTicket.prUrl && (
+                      <a
+                        href={editedTicket.prUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="absolute right-3 top-3 text-cyan-600 hover:text-cyan-400 transition-colors"
+                      >
+                        <Link size={14} />
+                      </a>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-[0.3em] text-cyan-700 font-black flex items-center gap-2">
+                    <FileText size={12} /> PRD Reference
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="url"
+                      value={editedTicket.prdUrl || ''}
+                      onChange={(e) => handleChange('prdUrl', e.target.value || undefined)}
+                      placeholder="https://docs.google.com/... or file path"
+                      className="w-full bg-black/40 border border-cyan-900/30 text-cyan-300 p-3 pr-10 text-[10px] font-mono focus:border-cyan-500 focus:outline-none rounded-md"
+                    />
+                    {editedTicket.prdUrl && (
+                      <a
+                        href={editedTicket.prdUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="absolute right-3 top-3 text-cyan-600 hover:text-cyan-400 transition-colors"
+                      >
+                        <Link size={14} />
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>

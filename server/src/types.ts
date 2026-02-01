@@ -69,6 +69,7 @@ export interface DbTicket {
   end_date: string | null;
   ai_insights: string | null;
   pr_url: string | null; // GitHub PR URL
+  prd_url: string | null; // PRD reference URL
   position: number;
   flagged: number; // 0 or 1
   requires_human: number; // 0 or 1
@@ -112,6 +113,7 @@ export interface CreateTicketDto {
   start_date?: string;
   end_date?: string;
   pr_url?: string; // GitHub PR URL
+  prd_url?: string; // PRD reference URL
   flagged?: boolean;
   requiresHuman?: boolean;
 }
@@ -128,6 +130,7 @@ export interface UpdateTicketDto {
   end_date?: string;
   ai_insights?: string;
   pr_url?: string; // GitHub PR URL
+  prd_url?: string; // PRD reference URL
   flagged?: boolean;
   requiresHuman?: boolean;
 }
@@ -211,6 +214,7 @@ export interface Ticket {
   endDate?: string;
   aiInsights?: string;
   prUrl?: string; // GitHub PR URL
+  prdUrl?: string; // PRD reference URL
   position: number;
   flagged?: boolean; // Important/urgent flag
   requiresHuman?: boolean; // Needs human intervention
